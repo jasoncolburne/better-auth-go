@@ -1,6 +1,6 @@
 # better-auth-go
 
-golang implementation of [better-auth](/jasoncolburne/better-auth)
+golang implementation of [better-auth](https://github.com/jasoncolburne/better-auth)
 
 only the server side so far.
 
