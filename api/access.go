@@ -7,6 +7,7 @@ import (
 
 	"github.com/jasoncolburne/better-auth-go/api/accesstoken"
 	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
+	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 	"github.com/jasoncolburne/better-auth-go/pkg/storageinterfaces"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
@@ -15,6 +16,17 @@ type AccessVerifier struct {
 	accessTokenKey   cryptointerfaces.PublicKey
 	accessNonceStore storageinterfaces.AccessNonceStore
 	verification     cryptointerfaces.Verification
+}
+
+type accessRequest struct {
+	Token     string               `json:"token"`
+	Payload   accessRequestPayload `json:"payload"`
+	Signature string               `json:"signature"`
+}
+
+type accessRequestPayload struct {
+	Access  messages.Access `json:"access"`
+	Request json.RawMessage `json:"request"`
 }
 
 func NewAccessVerifier(
@@ -29,8 +41,13 @@ func NewAccessVerifier(
 	}
 }
 
-func (av *AccessVerifier) Verify(token string, payload []byte, payloadSignature string, nonce string, accessTime *time.Time) (*orderedmap.OrderedMap[string, any], error) {
-	decodedToken, signature, err := accesstoken.Decode(token)
+func (av *AccessVerifier) Verify(request []byte) (*orderedmap.OrderedMap[string, any], error) {
+	aRequest := &accessRequest{}
+	if err := json.Unmarshal([]byte(request), aRequest); err != nil {
+		return nil, err
+	}
+
+	decodedToken, signature, err := accesstoken.Decode(aRequest.Token)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +66,18 @@ func (av *AccessVerifier) Verify(token string, payload []byte, payloadSignature 
 		return nil, err
 	}
 
-	if err := av.verification.Verify(payloadSignature, decodedToken.PublicKey, payload); err != nil {
+	payloadJson, err := json.Marshal(aRequest.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := av.verification.Verify(aRequest.Signature, decodedToken.PublicKey, payloadJson); err != nil {
+		return nil, err
+	}
+
+	nonce := aRequest.Payload.Access.Nonce
+	accessTime, err := time.Parse(time.RFC3339Nano, aRequest.Payload.Access.Timestamp)
+	if err != nil {
 		return nil, err
 	}
 
