@@ -13,6 +13,21 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
+type FakeAccessRequest struct {
+	Token     string `json:"token"`
+	Payload   FakeAccessRequestPayload
+	Signature string `json:"signature"`
+}
+
+type FakeAccessRequestPayload struct {
+	Access  messages.Access          `json:"access"`
+	Request FakeAccessRequestRequest `json:"request"`
+}
+
+type FakeAccessRequestRequest struct {
+	Label string `json:"label"`
+}
+
 func TestAccess(t *testing.T) {
 	digester := cesrgolite.NewBlake3()
 	verifier := cesrgolite.NewSecp256r1Verifier()
@@ -289,8 +304,30 @@ func TestAccess(t *testing.T) {
 		t.Fail()
 	}
 
-	testAccessPayload := []byte("test")
-	signature, err = accessKey.Sign(testAccessPayload)
+	accessTime := time.Now()
+	nonce, err := salter.Generate128()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	testAccessPayload := FakeAccessRequestPayload{
+		Access: messages.Access{
+			Timestamp: accessTime.Format(time.RFC3339Nano),
+			Nonce:     nonce,
+		},
+		Request: FakeAccessRequestRequest{
+			Label: "value",
+		},
+	}
+
+	payloadJson, err = json.Marshal(testAccessPayload)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	signature, err = accessKey.Sign(payloadJson)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		t.Fail()
@@ -299,14 +336,19 @@ func TestAccess(t *testing.T) {
 	accessToken := refreshAccessTokenResponse.Payload.Access.Token
 	accessVerifier := api.NewAccessVerifier(serverAccessKey, accessNonceStore, verifier)
 
-	accessTime := time.Now()
-	nonce, err := salter.Generate128()
+	accessRequest := FakeAccessRequest{
+		Token:     accessToken,
+		Payload:   testAccessPayload,
+		Signature: signature,
+	}
+
+	requestJson, err := json.Marshal(accessRequest)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		t.Fail()
 	}
 
-	attributes, err := accessVerifier.Verify(accessToken, testAccessPayload, signature, nonce, &accessTime)
+	attributes, err := accessVerifier.Verify(requestJson)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		t.Fail()
@@ -569,8 +611,30 @@ func TestPassphraseAccess(t *testing.T) {
 		t.Fail()
 	}
 
-	testAccessPayload := []byte("test")
-	signature, err = accessKey.Sign(testAccessPayload)
+	accessTime := time.Now()
+	nonce, err := salter.Generate128()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	testAccessPayload := FakeAccessRequestPayload{
+		Access: messages.Access{
+			Timestamp: accessTime.Format(time.RFC3339Nano),
+			Nonce:     nonce,
+		},
+		Request: FakeAccessRequestRequest{
+			Label: "value",
+		},
+	}
+
+	payloadJson, err = json.Marshal(testAccessPayload)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	signature, err = accessKey.Sign(payloadJson)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		t.Fail()
@@ -579,14 +643,19 @@ func TestPassphraseAccess(t *testing.T) {
 	accessToken := refreshAccessTokenResponse.Payload.Access.Token
 	accessVerifier := api.NewAccessVerifier(serverAccessKey, accessNonceStore, verifier)
 
-	accessTime := time.Now()
-	nonce, err := salter.Generate128()
+	accessRequest := FakeAccessRequest{
+		Token:     accessToken,
+		Payload:   testAccessPayload,
+		Signature: signature,
+	}
+
+	requestJson, err := json.Marshal(accessRequest)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		t.Fail()
 	}
 
-	attributes, err := accessVerifier.Verify(accessToken, testAccessPayload, signature, nonce, &accessTime)
+	attributes, err := accessVerifier.Verify(requestJson)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		t.Fail()
