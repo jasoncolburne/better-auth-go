@@ -89,6 +89,10 @@ func (av *AccessVerifier) Verify(request []byte) (*orderedmap.OrderedMap[string,
 		return nil, fmt.Errorf("timed out")
 	}
 
+	if time.Now().Before(accessTime) {
+		return nil, fmt.Errorf("request from the future")
+	}
+
 	expiry, err := time.Parse(time.RFC3339Nano, decodedToken.Expiry)
 	if time.Now().After(expiry) {
 		return nil, fmt.Errorf("token expired")
