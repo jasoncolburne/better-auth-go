@@ -41,67 +41,67 @@ func NewAccessVerifier(
 	}
 }
 
-func (av *AccessVerifier) Verify(request []byte) (*orderedmap.OrderedMap[string, any], error) {
+func (av *AccessVerifier) Verify(request []byte) ([]byte, *orderedmap.OrderedMap[string, any], error) {
 	aRequest := &accessRequest{}
 	if err := json.Unmarshal([]byte(request), aRequest); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	decodedToken, signature, err := accesstoken.Decode(aRequest.Token)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	jsonToken, err := json.Marshal(decodedToken)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	publicKey, err := av.accessTokenKey.Public()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := av.verification.Verify(signature, publicKey, jsonToken); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	payloadJson, err := json.Marshal(aRequest.Payload)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := av.verification.Verify(aRequest.Signature, decodedToken.PublicKey, payloadJson); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	nonce := aRequest.Payload.Access.Nonce
 	accessTime, err := time.Parse(time.RFC3339Nano, aRequest.Payload.Access.Timestamp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := av.accessNonceStore.Reserve(decodedToken.AccountId, nonce); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if time.Now().After(accessTime.Add(30 * time.Second)) {
-		return nil, fmt.Errorf("timed out")
+		return nil, nil, fmt.Errorf("timed out")
 	}
 
 	if time.Now().Before(accessTime) {
-		return nil, fmt.Errorf("request from the future")
+		return nil, nil, fmt.Errorf("request from the future")
 	}
 
 	expiry, err := time.Parse(time.RFC3339Nano, decodedToken.Expiry)
 	if time.Now().After(expiry) {
-		return nil, fmt.Errorf("token expired")
+		return nil, nil, fmt.Errorf("token expired")
 	}
 
 	issuedAt, err := time.Parse(time.RFC3339Nano, decodedToken.IssuedAt)
 	if time.Now().Before(issuedAt) {
-		return nil, fmt.Errorf("token issued in the future")
+		return nil, nil, fmt.Errorf("token issued in the future")
 	}
 
-	return decodedToken.Attributes, nil
+	return aRequest.Payload.Request, decodedToken.Attributes, nil
 }
