@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -348,9 +349,20 @@ func TestAccess(t *testing.T) {
 		t.Fail()
 	}
 
-	attributes, err := accessVerifier.Verify(requestJson)
+	extractedRequestBytes, attributes, err := accessVerifier.Verify(requestJson)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	extractedRequest := &FakeAccessRequestRequest{}
+	if err := json.Unmarshal(extractedRequestBytes, extractedRequest); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	if !strings.EqualFold(extractedRequest.Label, "value") {
+		fmt.Printf("malformed request body")
 		t.Fail()
 	}
 
@@ -655,9 +667,20 @@ func TestPassphraseAccess(t *testing.T) {
 		t.Fail()
 	}
 
-	attributes, err := accessVerifier.Verify(requestJson)
+	extractedRequestBytes, attributes, err := accessVerifier.Verify(requestJson)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	extractedRequest := &FakeAccessRequestRequest{}
+	if err := json.Unmarshal(extractedRequestBytes, extractedRequest); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	if !strings.EqualFold(extractedRequest.Label, "value") {
+		fmt.Printf("malformed request body")
 		t.Fail()
 	}
 
