@@ -1,65 +1,47 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuth) RotateAuthenticationKey(request *messages.RotateAuthenticationKeyRequest) (string, error) {
-	requestPayloadBytes, err := json.Marshal(request.Payload)
+func (ba *BetterAuthServer[T]) RotateAuthenticationKey(message string) (string, error) {
+	request, err := messages.ParseRotateAuthenticationKeyRequest(message)
 	if err != nil {
 		return "", err
 	}
 
-	if err := ba.crypto.verification.Verify(
-		request.Signature,
-		request.Payload.Authentication.PublicKeys.Current,
-		requestPayloadBytes,
+	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Authentication.PublicKey); err != nil {
+		return "", err
+	}
+
+	if err := ba.store.Authentication.Key.Rotate(
+		request.Payload.Request.Authentication.Identity,
+		request.Payload.Request.Authentication.Device,
+		request.Payload.Request.Authentication.PublicKey,
+		request.Payload.Request.Authentication.RotationHash,
 	); err != nil {
 		return "", err
 	}
 
-	if err := ba.stores.authenticationKey.Rotate(
-		request.Payload.Identification.AccountId,
-		request.Payload.Identification.DeviceId,
-		request.Payload.Authentication.PublicKeys.Current,
-		request.Payload.Authentication.PublicKeys.NextDigest,
-	); err != nil {
-		return "", err
-	}
-
-	publicKey, err := ba.crypto.keyPairs.response.Public()
+	responseKeyHash, err := ba.responseKeyHash()
 	if err != nil {
 		return "", err
 	}
 
-	publicKeyDigest := ba.crypto.digest.Sum([]byte(publicKey))
+	response := messages.NewRotateAuthenticationKeyResponse(
+		messages.RotateAuthenticationKeyResponsePayload{},
+		responseKeyHash,
+		request.Payload.Access.Nonce,
+	)
 
-	payload := messages.RotateAuthenticationKeyResponsePayload{
-		Success:         true,
-		PublicKeyDigest: publicKeyDigest,
+	if err := response.Sign(ba.crypto.KeyPair.Response); err != nil {
+		return "", err
 	}
 
-	payloadBytes, err := json.Marshal(payload)
+	reply, err := response.Serialize()
 	if err != nil {
 		return "", err
 	}
 
-	signature, err := ba.crypto.keyPairs.response.Sign(payloadBytes)
-	if err != nil {
-		return "", err
-	}
-
-	message := messages.RotateAuthenticationKeyResponse{
-		Payload:   payload,
-		Signature: signature,
-	}
-
-	bytes, err := json.Marshal(message)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
+	return reply, nil
 }

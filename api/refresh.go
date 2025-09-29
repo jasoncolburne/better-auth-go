@@ -1,107 +1,107 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
-	"time"
+	"strings"
 
-	"github.com/jasoncolburne/better-auth-go/api/accesstoken"
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-func (ba *BetterAuth) RefreshAccessToken(request *messages.RefreshAccessTokenRequest, tokenAttributes *orderedmap.OrderedMap[string, any]) (string, error) {
-	sessionId := request.Payload.Refresh.SessionId
-
-	accountId, refreshPublicKey, err := ba.stores.refreshKey.Get(sessionId)
+func (ba *BetterAuthServer[T]) RefreshAccessToken(message string) (string, error) {
+	request, err := messages.ParseRefreshAccessTokenRequest(message)
 	if err != nil {
 		return "", err
 	}
 
-	requestPayloadBytes, err := json.Marshal(request.Payload)
+	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Access.PublicKey); err != nil {
+		return "", err
+	}
+
+	tokenString := request.Payload.Request.Access.Token
+	token, err := messages.ParseAccessToken[T](
+		tokenString,
+		ba.crypto.KeyPair.Access.Verifier().SignatureLength(),
+		ba.encoding.TokenEncoder,
+	)
 	if err != nil {
 		return "", err
 	}
 
-	if err := ba.crypto.verification.Verify(
-		request.Signature,
-		refreshPublicKey,
-		requestPayloadBytes,
-	); err != nil {
-		return "", err
-	}
-
-	if request.Payload.Refresh.Nonces.Current == nil {
-		return "", fmt.Errorf("current nonce must be specified")
-	}
-
-	if err := ba.stores.refreshNonce.Evolve(
-		sessionId,
-		*request.Payload.Refresh.Nonces.Current,
-		request.Payload.Refresh.Nonces.NextDigest,
-	); err != nil {
-		return "", err
-	}
-
-	issuedAt := time.Now().UTC()
-	expiry := issuedAt.Add(time.Minute * 15) // TODO remove magic
-
-	accessToken := messages.AccessToken{
-		AccountId:  accountId,
-		PublicKey:  request.Payload.Access.PublicKey,
-		IssuedAt:   issuedAt.Format(time.RFC3339Nano),
-		Expiry:     expiry.Format(time.RFC3339Nano),
-		Attributes: tokenAttributes,
-	}
-
-	jsonToken, err := json.Marshal(accessToken)
+	accessPublicKey, err := ba.crypto.KeyPair.Access.Public()
 	if err != nil {
 		return "", err
 	}
 
-	tokenSignature, err := ba.crypto.keyPairs.access.Sign(jsonToken)
+	if err := token.VerifyToken(ba.crypto.KeyPair.Access.Verifier(), accessPublicKey, ba.encoding.Timestamper); err != nil {
+		return "", err
+	}
+
+	hash := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Access.PublicKey))
+	if !strings.EqualFold(hash, token.RotationHash) {
+		return "", fmt.Errorf("hash mismatch")
+	}
+
+	now := ba.encoding.Timestamper.Now()
+	refreshExpiry, err := ba.encoding.Timestamper.Parse(token.RefreshExpiry)
 	if err != nil {
 		return "", err
 	}
 
-	encodedToken, err := accesstoken.Encode(&accessToken, tokenSignature)
+	if now.After(refreshExpiry) {
+		return "", fmt.Errorf("refresh has expired")
+	}
+
+	if err := ba.store.Access.KeyHash.Reserve(hash); err != nil {
+		return "", err
+	}
+
+	later := now.Add(ba.expiry.Access)
+
+	issuedAt := ba.encoding.Timestamper.Format(now)
+	expiry := ba.encoding.Timestamper.Format(later)
+
+	accessToken := messages.NewAccessToken(
+		token.Identity,
+		request.Payload.Request.Access.PublicKey,
+		request.Payload.Request.Access.RotationHash,
+		issuedAt,
+		expiry,
+		token.RefreshExpiry,
+		token.Attributes,
+	)
+
+	if err := accessToken.Sign(ba.crypto.KeyPair.Access); err != nil {
+		return "", err
+	}
+
+	serializedToken, err := accessToken.SerializeToken(ba.encoding.TokenEncoder)
 	if err != nil {
 		return "", err
 	}
 
-	publicKey, err := ba.crypto.keyPairs.response.Public()
+	responseKeyHash, err := ba.responseKeyHash()
 	if err != nil {
 		return "", err
 	}
 
-	publicKeyDigest := ba.crypto.digest.Sum([]byte(publicKey))
-
-	payload := messages.RefreshAccessTokenResponsePayload{
-		Access: messages.RefreshAccessTokenResponseAccess{
-			Token: encodedToken,
+	response := messages.NewRefreshAccessTokenResponse(
+		messages.RefreshAccessTokenResponsePayload{
+			Access: messages.RefreshAccessTokenResponseAccess{
+				Token: serializedToken,
+			},
 		},
-		PublicKeyDigest: publicKeyDigest,
+		responseKeyHash,
+		request.Payload.Access.Nonce,
+	)
+
+	if err := response.Sign(ba.crypto.KeyPair.Response); err != nil {
+		return "", err
 	}
 
-	payloadBytes, err := json.Marshal(payload)
+	reply, err := response.Serialize()
 	if err != nil {
 		return "", err
 	}
 
-	signature, err := ba.crypto.keyPairs.response.Sign(payloadBytes)
-	if err != nil {
-		return "", err
-	}
-
-	message := messages.RefreshAccessTokenResponse{
-		Payload:   payload,
-		Signature: signature,
-	}
-
-	bytes, err := json.Marshal(message)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
+	return reply, nil
 }

@@ -1,4 +1,4 @@
-package cesrgolite
+package crypto
 
 import (
 	"encoding/base64"

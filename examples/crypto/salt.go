@@ -1,4 +1,4 @@
-package cesrgolite
+package crypto
 
 import (
 	"crypto/rand"
@@ -7,7 +7,7 @@ import (
 
 type Salter struct{}
 
-func NewSalter() *Salter {
+func NewNoncer() *Salter {
 	return &Salter{}
 }
 

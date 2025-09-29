@@ -1,5 +1,5 @@
 package cryptointerfaces
 
-type Salt interface {
+type Noncer interface {
 	Generate128() (string, error)
 }

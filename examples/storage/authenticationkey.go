@@ -13,18 +13,18 @@ type KeyState struct {
 }
 
 type InMemoryAuthenticationKeyStore struct {
-	digester     cryptointerfaces.Digest
+	hasher       cryptointerfaces.Hasher
 	knownDevices map[string]map[string]KeyState
 }
 
-func NewInMemoryAuthenticationKeyStore(digester cryptointerfaces.Digest) *InMemoryAuthenticationKeyStore {
+func NewInMemoryAuthenticationKeyStore(hasher cryptointerfaces.Hasher) *InMemoryAuthenticationKeyStore {
 	return &InMemoryAuthenticationKeyStore{
-		digester:     digester,
+		hasher:       hasher,
 		knownDevices: map[string]map[string]KeyState{},
 	}
 }
 
-func (s *InMemoryAuthenticationKeyStore) Register(accountId, deviceId, current, nextDigest string) error {
+func (s *InMemoryAuthenticationKeyStore) Register(accountId, deviceId, current, nextDigest string, existingIdentity bool) error {
 	devices, ok := s.knownDevices[accountId]
 	if !ok {
 		devices = map[string]KeyState{}
@@ -70,10 +70,10 @@ func (s *InMemoryAuthenticationKeyStore) Rotate(accountId, deviceId, current, ne
 		return fmt.Errorf("device not found")
 	}
 
-	currentDigest := s.digester.Sum([]byte(current))
+	currentDigest := s.hasher.Sum([]byte(current))
 
 	if !strings.EqualFold(currentDigest, device.nextDigest) {
-		return fmt.Errorf("digest mismatch")
+		return fmt.Errorf("hash mismatch")
 	}
 
 	devices[deviceId] = KeyState{
