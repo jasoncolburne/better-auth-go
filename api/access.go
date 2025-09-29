@@ -9,7 +9,7 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/storageinterfaces"
 )
 
-type AccessVerifier[T any] struct {
+type AccessVerifier[AttributesType any] struct {
 	crypto   *VerifierCryptoContainer
 	encoding *VerifierEncodingContainer
 	store    *VerifierStoreContainer
@@ -33,26 +33,26 @@ type VerifierStoreContainer struct {
 	AccessNonce storageinterfaces.TimeLockStore
 }
 
-func NewAccessVerifier[T any](
+func NewAccessVerifier[AttributesType any](
 	crypto *VerifierCryptoContainer,
 	encoding *VerifierEncodingContainer,
 	store *VerifierStoreContainer,
-) *AccessVerifier[T] {
-	return &AccessVerifier[T]{
+) *AccessVerifier[AttributesType] {
+	return &AccessVerifier[AttributesType]{
 		crypto:   crypto,
 		encoding: encoding,
 		store:    store,
 	}
 }
 
-type AccessScanner[T any] = messages.AccessRequest[json.RawMessage, T]
+type AccessScanner[AttributesType any] = messages.AccessRequest[json.RawMessage, AttributesType]
 
-func ParseAccessScanner[T any](message string) (*AccessScanner[T], error) {
-	return messages.ParseAccessRequest(message, &AccessScanner[T]{})
+func ParseAccessScanner[AttributesType any](message string) (*AccessScanner[AttributesType], error) {
+	return messages.ParseAccessRequest(message, &AccessScanner[AttributesType]{})
 }
 
-func (av *AccessVerifier[T]) Verify(message string, attributes *T) (string, *T, error) {
-	request, err := ParseAccessScanner[T](message)
+func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (string, *AttributesType, error) {
+	request, err := ParseAccessScanner[AttributesType](message)
 	if err != nil {
 		return "", attributes, nil
 	}

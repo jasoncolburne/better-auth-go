@@ -4,7 +4,7 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[T]) StartAuthentication(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) StartAuthentication(message string) (string, error) {
 	request, err := messages.ParseStartAuthenticationRequest(message)
 	if err != nil {
 		return "", err
@@ -44,7 +44,7 @@ func (ba *BetterAuthServer[T]) StartAuthentication(message string) (string, erro
 	return reply, err
 }
 
-func (ba *BetterAuthServer[T]) FinishAuthentication(message string, attributes T) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) FinishAuthentication(message string, attributes AttributesType) (string, error) {
 	request, err := messages.ParseFinishAuthenticationRequest(message)
 	if err != nil {
 		return "", err

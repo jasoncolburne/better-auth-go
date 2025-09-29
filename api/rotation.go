@@ -4,7 +4,7 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[T]) RotateAuthenticationKey(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RotateAuthenticationKey(message string) (string, error) {
 	request, err := messages.ParseRotateAuthenticationKeyRequest(message)
 	if err != nil {
 		return "", err

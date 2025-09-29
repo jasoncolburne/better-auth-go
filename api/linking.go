@@ -6,7 +6,7 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[T]) LinkDevice(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, error) {
 	request, err := messages.ParseLinkDeviceRequest(message)
 	if err != nil {
 		return "", err

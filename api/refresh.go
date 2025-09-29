@@ -7,7 +7,7 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[T]) RefreshAccessToken(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RefreshAccessToken(message string) (string, error) {
 	request, err := messages.ParseRefreshAccessTokenRequest(message)
 	if err != nil {
 		return "", err
@@ -18,7 +18,7 @@ func (ba *BetterAuthServer[T]) RefreshAccessToken(message string) (string, error
 	}
 
 	tokenString := request.Payload.Request.Access.Token
-	token, err := messages.ParseAccessToken[T](
+	token, err := messages.ParseAccessToken[AttributesType](
 		tokenString,
 		ba.crypto.KeyPair.Access.Verifier().SignatureLength(),
 		ba.encoding.TokenEncoder,

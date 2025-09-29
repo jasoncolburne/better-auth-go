@@ -7,13 +7,13 @@ import (
 	"io"
 )
 
-type TokenEncoder[T any] struct{}
+type TokenEncoder[AttributesType any] struct{}
 
-func NewTokenEncoder[T any]() *TokenEncoder[T] {
-	return &TokenEncoder[T]{}
+func NewTokenEncoder[AttributesType any]() *TokenEncoder[AttributesType] {
+	return &TokenEncoder[AttributesType]{}
 }
 
-func (*TokenEncoder[T]) Encode(object string) (string, error) {
+func (*TokenEncoder[AttributesType]) Encode(object string) (string, error) {
 	var compressedBuffer bytes.Buffer
 	writer, err := gzip.NewWriterLevel(&compressedBuffer, 9)
 	if err != nil {
@@ -31,7 +31,7 @@ func (*TokenEncoder[T]) Encode(object string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(compressedBuffer.Bytes()), nil
 }
 
-func (*TokenEncoder[T]) Decode(token string) (string, error) {
+func (*TokenEncoder[AttributesType]) Decode(token string) (string, error) {
 	gzippedToken, err := base64.RawURLEncoding.DecodeString(token) // TODO remove magic
 	if err != nil {
 		return "", err

@@ -2,7 +2,7 @@ package api
 
 import "github.com/jasoncolburne/better-auth-go/pkg/messages"
 
-func (ba *BetterAuthServer[T]) RecoverAccount(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (string, error) {
 	request, err := messages.ParseRecoverAccountRequest(message)
 	if err != nil {
 		return "", err

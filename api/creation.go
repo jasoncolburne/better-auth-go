@@ -2,7 +2,7 @@ package api
 
 import "github.com/jasoncolburne/better-auth-go/pkg/messages"
 
-func (ba *BetterAuthServer[T]) CreateAccount(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (string, error) {
 	request, err := messages.ParseCreateAccountRequest(message)
 	if err != nil {
 		return "", err

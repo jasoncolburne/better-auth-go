@@ -8,7 +8,7 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/storageinterfaces"
 )
 
-type BetterAuthServer[T any] struct {
+type BetterAuthServer[AttributesType any] struct {
 	crypto   *CryptoContainer
 	encoding *EncodingContainer
 	expiry   *ExpiryContainer
@@ -57,13 +57,13 @@ type RecoveryStoreContainer struct {
 	Hash storageinterfaces.RecoveryHashStore
 }
 
-func NewBetterAuthServer[T any](
+func NewBetterAuthServer[AttributesType any](
 	crypto *CryptoContainer,
 	encoding *EncodingContainer,
 	expiry *ExpiryContainer,
 	store *StoresContainer,
-) *BetterAuthServer[T] {
-	return &BetterAuthServer[T]{
+) *BetterAuthServer[AttributesType] {
+	return &BetterAuthServer[AttributesType]{
 		crypto:   crypto,
 		encoding: encoding,
 		expiry:   expiry,
@@ -71,7 +71,7 @@ func NewBetterAuthServer[T any](
 	}
 }
 
-func (ba *BetterAuthServer[T]) responseKeyHash() (string, error) {
+func (ba *BetterAuthServer[AttributesType]) responseKeyHash() (string, error) {
 	responseKey, err := ba.crypto.KeyPair.Response.Public()
 	if err != nil {
 		return "", err

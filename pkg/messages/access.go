@@ -9,28 +9,28 @@ import (
 	"github.com/jasoncolburne/better-auth-go/pkg/storageinterfaces"
 )
 
-type AccessToken[T any] struct {
-	Identity      string `json:"identity"`
-	PublicKey     string `json:"publicKey"`
-	RotationHash  string `json:"rotationHash"`
-	IssuedAt      string `json:"issuedAt"`
-	Expiry        string `json:"expiry"`
-	RefreshExpiry string `json:"refreshExpiry"`
-	Attributes    T      `json:"attributes"`
+type AccessToken[AttributesType any] struct {
+	Identity      string         `json:"identity"`
+	PublicKey     string         `json:"publicKey"`
+	RotationHash  string         `json:"rotationHash"`
+	IssuedAt      string         `json:"issuedAt"`
+	Expiry        string         `json:"expiry"`
+	RefreshExpiry string         `json:"refreshExpiry"`
+	Attributes    AttributesType `json:"attributes"`
 
 	signature *string `json:"-"`
 }
 
-func NewAccessToken[T any](
+func NewAccessToken[AttributesType any](
 	identity string,
 	publicKey string,
 	rotationHash string,
 	issuedAt string,
 	expiry string,
 	refreshExpiry string,
-	attributes T,
-) *AccessToken[T] {
-	return &AccessToken[T]{
+	attributes AttributesType,
+) *AccessToken[AttributesType] {
+	return &AccessToken[AttributesType]{
 		Identity:      identity,
 		PublicKey:     publicKey,
 		RotationHash:  rotationHash,
@@ -41,11 +41,11 @@ func NewAccessToken[T any](
 	}
 }
 
-func ParseAccessToken[T any](
+func ParseAccessToken[AttributesType any](
 	message string,
 	publicKeyLength int,
 	tokenEncoder encodinginterfaces.TokenEncoder,
-) (*AccessToken[T], error) {
+) (*AccessToken[AttributesType], error) {
 	signature := message[:publicKeyLength]
 	rest := message[publicKeyLength:]
 
@@ -54,7 +54,7 @@ func ParseAccessToken[T any](
 		return nil, err
 	}
 
-	accessToken := &AccessToken[T]{}
+	accessToken := &AccessToken[AttributesType]{}
 	if err := json.Unmarshal([]byte(tokenString), accessToken); err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func ParseAccessToken[T any](
 	return accessToken, nil
 }
 
-func (at *AccessToken[T]) SerializeToken(tokenEncoder encodinginterfaces.TokenEncoder) (string, error) {
+func (at *AccessToken[AttributesType]) SerializeToken(tokenEncoder encodinginterfaces.TokenEncoder) (string, error) {
 	if at.signature == nil {
 		return "", fmt.Errorf("nil signature")
 	}
@@ -84,7 +84,7 @@ func (at *AccessToken[T]) SerializeToken(tokenEncoder encodinginterfaces.TokenEn
 	return token, nil
 }
 
-func (at *AccessToken[T]) ComposePayload() (string, error) {
+func (at *AccessToken[AttributesType]) ComposePayload() (string, error) {
 	composedPayload, err := json.Marshal(at)
 	if err != nil {
 		return "", err
@@ -93,7 +93,7 @@ func (at *AccessToken[T]) ComposePayload() (string, error) {
 	return string(composedPayload), nil
 }
 
-func (at *AccessToken[T]) VerifyToken(
+func (at *AccessToken[AttributesType]) VerifyToken(
 	verifier cryptointerfaces.Verifier,
 	publicKey string,
 	timestamper encodinginterfaces.Timestamper,
@@ -134,7 +134,7 @@ func (at *AccessToken[T]) VerifyToken(
 	return nil
 }
 
-func (at *AccessToken[T]) Sign(signingKey cryptointerfaces.SigningKey) error {
+func (at *AccessToken[AttributesType]) Sign(signingKey cryptointerfaces.SigningKey) error {
 	composedPayload, err := at.ComposePayload()
 	if err != nil {
 		return err
@@ -150,11 +150,11 @@ func (at *AccessToken[T]) Sign(signingKey cryptointerfaces.SigningKey) error {
 	return nil
 }
 
-type AccessRequest[T any, U any] SignableMessage[AccessRequestPayload[T]]
+type AccessRequest[PayloadType any, AttributesType any] SignableMessage[AccessRequestPayload[PayloadType]]
 
-type AccessRequestPayload[T any] struct {
+type AccessRequestPayload[PayloadType any] struct {
 	Access  AccessRequestAccess
-	Request T
+	Request PayloadType
 }
 
 type AccessRequestAccess struct {
@@ -163,14 +163,14 @@ type AccessRequestAccess struct {
 	Token     string
 }
 
-func NewAccessRequest[T any, U any, V AccessRequest[T, U]](
-	payload T,
+func NewAccessRequest[PayloadType any, AttributesType any, RequestType AccessRequest[PayloadType, AttributesType]](
+	payload PayloadType,
 	timestamper encodinginterfaces.Timestamper,
 	token string,
 	nonce string,
-) *V {
-	return &V{
-		Payload: AccessRequestPayload[T]{
+) *RequestType {
+	return &RequestType{
+		Payload: AccessRequestPayload[PayloadType]{
 			Access: AccessRequestAccess{
 				Nonce:     nonce,
 				Timestamp: timestamper.Format(timestamper.Now()),
@@ -181,7 +181,7 @@ func NewAccessRequest[T any, U any, V AccessRequest[T, U]](
 	}
 }
 
-func ParseAccessRequest[T any, U AccessRequest[json.RawMessage, T]](message string, u *U) (*U, error) {
+func ParseAccessRequest[AttributesType any, RequestType AccessRequest[json.RawMessage, AttributesType]](message string, u *RequestType) (*RequestType, error) {
 	if err := json.Unmarshal([]byte(message), u); err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func ParseAccessRequest[T any, U AccessRequest[json.RawMessage, T]](message stri
 	return u, nil
 }
 
-func (ar *AccessRequest[T, U]) ComposePayload() (string, error) {
+func (ar *AccessRequest[PayloadType, AttributesType]) ComposePayload() (string, error) {
 	composedPayload, err := json.Marshal(ar.Payload)
 	if err != nil {
 		return "", err
@@ -198,7 +198,7 @@ func (ar *AccessRequest[T, U]) ComposePayload() (string, error) {
 	return string(composedPayload), nil
 }
 
-func (ar *AccessRequest[T, U]) Serialize() (string, error) {
+func (ar *AccessRequest[PayloadType, AttributesType]) Serialize() (string, error) {
 	composedPayload, err := ar.ComposePayload()
 	if err != nil {
 		return "", err
@@ -207,7 +207,7 @@ func (ar *AccessRequest[T, U]) Serialize() (string, error) {
 	return fmt.Sprintf("{\"payload\":%s,\"signature\":\"%s\"}", composedPayload, *ar.Signature), nil
 }
 
-func (ar *AccessRequest[T, U]) Sign(signer cryptointerfaces.SigningKey) error {
+func (ar *AccessRequest[PayloadType, AttributesType]) Sign(signer cryptointerfaces.SigningKey) error {
 	composedPayload, err := ar.ComposePayload()
 	if err != nil {
 		return err
@@ -223,16 +223,16 @@ func (ar *AccessRequest[T, U]) Sign(signer cryptointerfaces.SigningKey) error {
 	return nil
 }
 
-func (ar *AccessRequest[T, U]) VerifyAccess(
+func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 	nonceStore storageinterfaces.TimeLockStore,
 	verifier cryptointerfaces.Verifier,
 	tokenVerifier cryptointerfaces.Verifier,
 	serverAccessPublicKey string,
 	tokenEncoder encodinginterfaces.TokenEncoder,
 	timestamper encodinginterfaces.Timestamper,
-	attributes *U,
-) (string, *U, error) {
-	accessToken, err := ParseAccessToken[U](
+	attributes *AttributesType,
+) (string, *AttributesType, error) {
+	accessToken, err := ParseAccessToken[AttributesType](
 		ar.Payload.Access.Token,
 		tokenVerifier.SignatureLength(),
 		tokenEncoder,
