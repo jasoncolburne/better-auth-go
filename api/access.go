@@ -2,106 +2,79 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-	"time"
 
-	"github.com/jasoncolburne/better-auth-go/api/accesstoken"
 	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
+	"github.com/jasoncolburne/better-auth-go/pkg/encodinginterfaces"
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 	"github.com/jasoncolburne/better-auth-go/pkg/storageinterfaces"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-type AccessVerifier struct {
-	accessTokenKey   cryptointerfaces.PublicKey
-	accessNonceStore storageinterfaces.AccessNonceStore
-	verification     cryptointerfaces.Verification
+type AccessVerifier[AttributesType any] struct {
+	crypto   *VerifierCryptoContainer
+	encoding *VerifierEncodingContainer
+	store    *VerifierStoreContainer
 }
 
-type accessRequest struct {
-	Token     string               `json:"token"`
-	Payload   accessRequestPayload `json:"payload"`
-	Signature string               `json:"signature"`
+type VerifierCryptoContainer struct {
+	PublicKey cryptointerfaces.VerificationKey
+	Verifier  cryptointerfaces.Verifier
 }
 
-type accessRequestPayload struct {
-	Access  messages.Access `json:"access"`
-	Request json.RawMessage `json:"request"`
+type VerifierCryptoPublicKey struct {
+	Access cryptointerfaces.VerificationKey
 }
 
-func NewAccessVerifier(
-	accessTokenKey cryptointerfaces.PublicKey,
-	accessNonceStore storageinterfaces.AccessNonceStore,
-	verification cryptointerfaces.Verification,
-) *AccessVerifier {
-	return &AccessVerifier{
-		accessTokenKey:   accessTokenKey,
-		accessNonceStore: accessNonceStore,
-		verification:     verification,
+type VerifierEncodingContainer struct {
+	TokenEncoder encodinginterfaces.TokenEncoder
+	Timestamper  encodinginterfaces.Timestamper
+}
+
+type VerifierStoreContainer struct {
+	AccessNonce storageinterfaces.TimeLockStore
+}
+
+func NewAccessVerifier[AttributesType any](
+	crypto *VerifierCryptoContainer,
+	encoding *VerifierEncodingContainer,
+	store *VerifierStoreContainer,
+) *AccessVerifier[AttributesType] {
+	return &AccessVerifier[AttributesType]{
+		crypto:   crypto,
+		encoding: encoding,
+		store:    store,
 	}
 }
 
-func (av *AccessVerifier) Verify(request []byte) ([]byte, *orderedmap.OrderedMap[string, any], error) {
-	aRequest := &accessRequest{}
-	if err := json.Unmarshal([]byte(request), aRequest); err != nil {
-		return nil, nil, err
-	}
+type AccessScanner[AttributesType any] = messages.AccessRequest[json.RawMessage, AttributesType]
 
-	decodedToken, signature, err := accesstoken.Decode(aRequest.Token)
+func ParseAccessScanner[AttributesType any](message string) (*AccessScanner[AttributesType], error) {
+	return messages.ParseAccessRequest(message, &AccessScanner[AttributesType]{})
+}
+
+func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (string, *AttributesType, error) {
+	request, err := ParseAccessScanner[AttributesType](message)
 	if err != nil {
-		return nil, nil, err
+		return "", attributes, nil
 	}
 
-	jsonToken, err := json.Marshal(decodedToken)
+	accessPublicKey, err := av.crypto.PublicKey.Public()
 	if err != nil {
-		return nil, nil, err
+		return "", attributes, err
 	}
 
-	publicKey, err := av.accessTokenKey.Public()
+	var identity string
+	identity, attributes, err = request.VerifyAccess(
+		av.store.AccessNonce,
+		av.crypto.Verifier,
+		av.crypto.PublicKey.Verifier(),
+		accessPublicKey,
+		av.encoding.TokenEncoder,
+		av.encoding.Timestamper,
+		attributes,
+	)
 	if err != nil {
-		return nil, nil, err
+		return "", attributes, err
 	}
 
-	if err := av.verification.Verify(signature, publicKey, jsonToken); err != nil {
-		return nil, nil, err
-	}
-
-	payloadJson, err := json.Marshal(aRequest.Payload)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err := av.verification.Verify(aRequest.Signature, decodedToken.PublicKey, payloadJson); err != nil {
-		return nil, nil, err
-	}
-
-	nonce := aRequest.Payload.Access.Nonce
-	accessTime, err := time.Parse(time.RFC3339Nano, aRequest.Payload.Access.Timestamp)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err := av.accessNonceStore.Reserve(decodedToken.AccountId, nonce); err != nil {
-		return nil, nil, err
-	}
-
-	if time.Now().After(accessTime.Add(30 * time.Second)) {
-		return nil, nil, fmt.Errorf("timed out")
-	}
-
-	if time.Now().Before(accessTime) {
-		return nil, nil, fmt.Errorf("request from the future")
-	}
-
-	expiry, err := time.Parse(time.RFC3339Nano, decodedToken.Expiry)
-	if time.Now().After(expiry) {
-		return nil, nil, fmt.Errorf("token expired")
-	}
-
-	issuedAt, err := time.Parse(time.RFC3339Nano, decodedToken.IssuedAt)
-	if time.Now().Before(issuedAt) {
-		return nil, nil, fmt.Errorf("token issued in the future")
-	}
-
-	return aRequest.Payload.Request, decodedToken.Attributes, nil
+	return identity, attributes, nil
 }

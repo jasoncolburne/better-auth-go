@@ -1,5 +1,6 @@
 package cryptointerfaces
 
-type PublicKey interface {
+type VerificationKey interface {
+	Verifier() Verifier
 	Public() (string, error)
 }

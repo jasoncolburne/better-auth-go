@@ -1,6 +1,6 @@
 package cryptointerfaces
 
-type KeyPair interface {
-	Public() (string, error)
+type SigningKey interface {
+	VerificationKey
 	Sign(message []byte) (string, error)
 }

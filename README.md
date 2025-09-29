@@ -2,12 +2,8 @@
 
 golang implementation of [better-auth](https://github.com/jasoncolburne/better-auth)
 
-only the server side so far.
+only the server side in this library. check out [typescript](https://github.com/jasoncolburne/better-auth-ts) for a full implementation.
 
 # getting started
 
-there are two sets of interfaces you must implement, storage and cryptographic. you'll find them
-in `/pkg`. in memory/software examples are provided, but nothing stops you from hooking this
-authentication system up to HSMs, databases, key-value stores, etc.
-
-for now, check `/api/api_test.go` for the flow.
+check `/api/api_test.go` for the flow.

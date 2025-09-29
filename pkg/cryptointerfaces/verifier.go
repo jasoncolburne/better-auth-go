@@ -1,5 +1,6 @@
 package cryptointerfaces
 
-type Verification interface {
+type Verifier interface {
+	SignatureLength() int
 	Verify(signature, publicKey string, message []byte) error
 }

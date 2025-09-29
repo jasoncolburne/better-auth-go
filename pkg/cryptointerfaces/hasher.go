@@ -1,5 +1,5 @@
 package cryptointerfaces
 
-type Digest interface {
+type Hasher interface {
 	Sum(message []byte) string
 }

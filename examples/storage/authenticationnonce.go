@@ -2,42 +2,54 @@ package storage
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/jasoncolburne/better-auth-go/examples/cesrgolite"
+	"github.com/jasoncolburne/better-auth-go/examples/crypto"
+	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
 )
 
 type InMemoryAuthenticationNonceStore struct {
-	accountIdsByNonce map[string]string
+	dataByNonce      map[string]string
+	lifetime         time.Duration
+	nonceExpirations map[string]time.Time
+	noncer           cryptointerfaces.Noncer
 }
 
-func NewInMemoryAuthenticationNonceStore() *InMemoryAuthenticationNonceStore {
+func NewInMemoryAuthenticationNonceStore(nonceLifetime time.Duration) *InMemoryAuthenticationNonceStore {
 	return &InMemoryAuthenticationNonceStore{
-		accountIdsByNonce: map[string]string{},
+		dataByNonce:      map[string]string{},
+		lifetime:         nonceLifetime,
+		nonceExpirations: map[string]time.Time{},
+		noncer:           crypto.NewNoncer(),
 	}
 }
 
-func (s *InMemoryAuthenticationNonceStore) Generate(accountId string) (string, error) {
-	salter := cesrgolite.NewSalter()
-
-	nonce, err := salter.Generate128()
+func (s *InMemoryAuthenticationNonceStore) Generate(identity string) (string, error) {
+	nonce, err := s.noncer.Generate128()
 	if err != nil {
 		return "", err
 	}
 
-	s.accountIdsByNonce[nonce] = accountId
+	s.dataByNonce[nonce] = identity
+	s.nonceExpirations[nonce] = time.Now().Add(s.lifetime)
 
 	return nonce, nil
 }
 
 func (s *InMemoryAuthenticationNonceStore) Verify(nonce string) (string, error) {
-	accountId, ok := s.accountIdsByNonce[nonce]
+	identity, ok := s.dataByNonce[nonce]
 	if !ok {
 		return "", fmt.Errorf("nonce not found")
 	}
 
-	return accountId, nil
-}
+	expiration, ok := s.nonceExpirations[nonce]
+	if !ok {
+		return "", fmt.Errorf("expiration not found")
+	}
 
-func (s *InMemoryAuthenticationNonceStore) Invalidate(nonce string) {
-	delete(s.accountIdsByNonce, nonce)
+	if time.Now().After(expiration) {
+		return "", fmt.Errorf("expired nonce")
+	}
+
+	return identity, nil
 }

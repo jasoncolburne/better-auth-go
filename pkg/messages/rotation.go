@@ -1,58 +1,45 @@
 package messages
 
-// ```json
-// {
-//     "payload": {
-//         "identification": {
-//             "accountId": "ENBRKI-MIlE-m8h5SY-kLOzmzGhCvovugIvRyXYbrXC3",
-//             "deviceId": "EAWkUfWVAMzIDy4aHjWwBwaQrmScYMpFobT93Ct6RVv_"
-//         },
-//         "authentication": {
-//             "publicKeys": {
-//                 "current": "1AAIA7CUSQ_Cvk3XE1ITDNQXS1qpdqEKwCk4q5Q4YP7GtuIq",
-//                 "nextDigest": "EEool9L2Vj-c30J8b0v-yThCVpxIJ5dAXPQSnge3IzvG"
-//             }
-//         }
-//     },
-//     "signature": "0IAZBlyJEQu-gmS05iYOfUhrDU3NV5Q5E_9PsYF0s5y-QHc5t4j0Rvh-0ljHVcGrt3VL3gB6qodEHDmiZNOhOg2Q"
-// }
-// ```
+// request
 
-type RotateAuthenticationKeyRequest struct {
-	Payload   RotateAuthenticationKeyRequestPayload `json:"payload"`
-	Signature string                                `json:"signature"`
-}
+type RotateAuthenticationKeyRequest = ClientRequest[RotateAuthenticationKeyRequestPayload]
 
 type RotateAuthenticationKeyRequestPayload struct {
-	Identification RotateAuthenticationKeyRequestIdentification `json:"identification"`
 	Authentication RotateAuthenticationKeyRequestAuthentication `json:"authentication"`
 }
 
-type RotateAuthenticationKeyRequestIdentification struct {
-	AccountId string `json:"accountId"`
-	DeviceId  string `json:"deviceId"`
-}
-
 type RotateAuthenticationKeyRequestAuthentication struct {
-	PublicKeys PublicKeys `json:"publicKeys"`
+	Device       string `json:"device"`
+	Identity     string `json:"identity"`
+	PublicKey    string `json:"publicKey"`
+	RotationHash string `json:"rotationHash"`
 }
 
-// ```json
-// {
-//     "payload": {
-//         "success": true,
-//         "publicKeyDigest": "EPqXgqZ_AiTVBfY2l_-vW016GroHLhLkeYrNc4HQB7WO"
-//     },
-//     "signature": "0IBcQqawkcFHuUgogsnh8tyKqBWnDLY6tbvLVAfw5aE9VxSEx0CQ_A5ILLgnlDX8vrl3X35xi6-p-ytUK5GVLie5"
-// }
-// ```
-
-type RotateAuthenticationKeyResponse struct {
-	Payload   RotateAuthenticationKeyResponsePayload `json:"payload"`
-	Signature string                                 `json:"signature"`
+func NewRotateAuthenticationKeyRequest(
+	payload RotateAuthenticationKeyRequestPayload,
+	nonce string,
+) *RotateAuthenticationKeyRequest {
+	return NewClientRequest(payload, nonce)
 }
 
-type RotateAuthenticationKeyResponsePayload struct {
-	Success         bool `json:"success"`
-	PublicKeyDigest string
+func ParseRotateAuthenticationKeyRequest(message string) (*RotateAuthenticationKeyRequest, error) {
+	return ParseClientRequest(message, &RotateAuthenticationKeyRequest{})
+}
+
+// response
+
+type RotateAuthenticationKeyResponse = ServerResponse[RotateAuthenticationKeyResponsePayload]
+
+type RotateAuthenticationKeyResponsePayload struct{}
+
+func NewRotateAuthenticationKeyResponse(
+	payload RotateAuthenticationKeyResponsePayload,
+	responseKeyHash string,
+	nonce string,
+) *RotateAuthenticationKeyResponse {
+	return NewServerResponse(payload, responseKeyHash, nonce)
+}
+
+func ParseRotateAuthenticationKeyResponse(message string) (*RotateAuthenticationKeyResponse, error) {
+	return ParseServerResponse(message, &RotateAuthenticationKeyResponse{})
 }

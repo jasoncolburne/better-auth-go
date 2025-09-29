@@ -1,4 +1,4 @@
-package cesrgolite
+package crypto
 
 import (
 	"crypto"
@@ -10,6 +10,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+
+	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
 )
 
 type Secp256r1 struct {
@@ -25,6 +27,10 @@ func NewSecp256r1() (*Secp256r1, error) {
 	return &Secp256r1{
 		private: keyPair,
 	}, nil
+}
+
+func (k *Secp256r1) Verifier() cryptointerfaces.Verifier {
+	return NewSecp256r1Verifier()
 }
 
 func (k *Secp256r1) Public() (string, error) {
@@ -65,9 +71,9 @@ type Secp256r1Signature struct {
 }
 
 func (k *Secp256r1) Sign(message []byte) (string, error) {
-	digest := sha256.Sum256(message)
+	hash := sha256.Sum256(message)
 
-	asn1Signature, err := k.private.Sign(nil, digest[:], crypto.SHA256)
+	asn1Signature, err := k.private.Sign(nil, hash[:], crypto.SHA256)
 	if err != nil {
 		return "", err
 	}
@@ -95,6 +101,10 @@ type Secp256r1Verifier struct {
 
 func NewSecp256r1Verifier() *Secp256r1Verifier {
 	return &Secp256r1Verifier{}
+}
+
+func (v *Secp256r1Verifier) SignatureLength() int {
+	return 88
 }
 
 func (v *Secp256r1Verifier) Verify(signature, publicKey string, message []byte) error {
@@ -125,8 +135,8 @@ func (v *Secp256r1Verifier) Verify(signature, publicKey string, message []byte) 
 	r.SetBytes(signatureBytes[2:34])
 	s.SetBytes(signatureBytes[34:66])
 
-	digest := sha256.Sum256(message)
-	if !ecdsa.Verify(cryptoKey, digest[:], &r, &s) {
+	hash := sha256.Sum256(message)
+	if !ecdsa.Verify(cryptoKey, hash[:], &r, &s) {
 		return fmt.Errorf("invalid signature")
 	}
 
