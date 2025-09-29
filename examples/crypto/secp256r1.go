@@ -127,16 +127,10 @@ func (v *Secp256r1Verifier) Verify(signature, publicKey string, message []byte) 
 
 	x, y := elliptic.UnmarshalCompressed(elliptic.P256(), publicKeyBytes)
 	uncompressedKey := [65]byte{}
-	uncompressedKey[0] = 4
+	uncompressedKey[0] = 0x04
 
-	xBytes := make([]byte, 32)
-	yBytes := make([]byte, 32)
-
-	x.FillBytes(xBytes)
-	y.FillBytes(yBytes)
-
-	copy(uncompressedKey[1:33], xBytes)
-	copy(uncompressedKey[33:65], yBytes)
+	x.FillBytes(uncompressedKey[1:33])
+	y.FillBytes(uncompressedKey[33:65])
 
 	cryptoKey, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), uncompressedKey[:])
 	if err != nil {
