@@ -54,6 +54,7 @@ func TestAccess(t *testing.T) {
 	accessNonceStore := storage.NewInMemoryTimeLockStore(accessWindow)
 	authenticationKeyStore := storage.NewInMemoryAuthenticationKeyStore(hasher)
 	authenticationNonceStore := storage.NewInMemoryAuthenticationNonceStore(authenticationChallengeLifetime)
+	recoveryHashStore := storage.NewInMemoryRecoveryHashStore()
 
 	identityVerifier := encoding.NewMockIdentityVerifier(hasher)
 	timestamper := encoding.NewRfc3339Nano()
@@ -103,6 +104,9 @@ func TestAccess(t *testing.T) {
 			Authentication: &api.AuthenticationStoreContainer{
 				Key:   authenticationKeyStore,
 				Nonce: authenticationNonceStore,
+			},
+			Recovery: &api.RecoveryStoreContainer{
+				Hash: recoveryHashStore,
 			},
 		},
 	)
