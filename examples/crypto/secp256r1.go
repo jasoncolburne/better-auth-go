@@ -52,16 +52,28 @@ func (k *Secp256r1) Public() (string, error) {
 }
 
 func (k *Secp256r1) compressPublicKey(pubKeyBytes []byte) ([]byte, error) {
-	if len(pubKeyBytes) != 65 || pubKeyBytes[0] != 0x04 {
-		return nil, fmt.Errorf("invalid uncompressed public key format")
+	if len(pubKeyBytes) != 65 {
+		return nil, fmt.Errorf("invalid length")
 	}
 
-	x := new(big.Int).SetBytes(pubKeyBytes[1:33])
-	y := new(big.Int).SetBytes(pubKeyBytes[33:65])
+	if pubKeyBytes[0] != 0x04 {
+		return nil, fmt.Errorf("invalid byte header")
+	}
 
-	curve := elliptic.P256()
+	x := pubKeyBytes[1:33]
+	y := pubKeyBytes[33:65]
 
-	compressed := elliptic.MarshalCompressed(curve, x, y)
+	yParity := y[31] & 0x01
+	var prefix byte
+	if yParity == 0 {
+		prefix = 0x02
+	} else {
+		prefix = 0x03
+	}
+
+	compressed := make([]byte, 33)
+	compressed[0] = prefix
+	copy(compressed[1:], x)
 
 	return compressed, nil
 }
