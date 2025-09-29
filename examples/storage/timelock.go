@@ -28,7 +28,7 @@ func (store *InMemoryTimeLockStore) Reserve(value string) error {
 		now := time.Now()
 
 		if now.Before(validAt) {
-			return fmt.Errorf("value reserverds too recently")
+			return fmt.Errorf("value reserved too recently")
 		}
 	}
 
