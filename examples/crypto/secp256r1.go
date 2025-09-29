@@ -128,7 +128,6 @@ func (v *Secp256r1Verifier) Verify(signature, publicKey string, message []byte) 
 	x, y := elliptic.UnmarshalCompressed(elliptic.P256(), publicKeyBytes)
 	uncompressedKey := [65]byte{}
 	uncompressedKey[0] = 0x04
-
 	x.FillBytes(uncompressedKey[1:33])
 	y.FillBytes(uncompressedKey[33:65])
 
