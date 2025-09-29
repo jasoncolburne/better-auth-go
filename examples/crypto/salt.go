@@ -5,13 +5,13 @@ import (
 	"encoding/base64"
 )
 
-type Salter struct{}
+type Noncer struct{}
 
-func NewNoncer() *Salter {
-	return &Salter{}
+func NewNoncer() *Noncer {
+	return &Noncer{}
 }
 
-func (*Salter) Generate128() (string, error) {
+func (*Noncer) Generate128() (string, error) {
 	entropy := [18]byte{}
 
 	_, err := rand.Read(entropy[2:])
