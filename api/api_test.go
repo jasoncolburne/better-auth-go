@@ -41,6 +41,13 @@ func NewFakeAccessRequest(
 }
 
 func TestAccess(t *testing.T) {
+	if err := testFlow(); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+}
+
+func testFlow() error {
 	accessLifetime := 15 * time.Minute
 	accessWindow := 30 * time.Second
 	refreshLifetime := 12 * time.Hour
@@ -62,20 +69,17 @@ func TestAccess(t *testing.T) {
 
 	serverResponseKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	serverResponsePublicKey, err := serverResponseKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	serverAccessKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	ba := api.NewBetterAuthServer[MockAttributes](
@@ -127,51 +131,43 @@ func TestAccess(t *testing.T) {
 
 	currentAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	nextAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	nextNextAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveryKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	nextAuthenticationPublicKey, err := nextAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	nextNextAuthenticationPublicKey, err := nextNextAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	rotationHash := hasher.Sum([]byte(nextAuthenticationPublicKey))
 	currentKey, err := currentAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveryPublicKey, err := recoveryKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveryHash := hasher.Sum([]byte(recoveryPublicKey))
@@ -182,8 +178,7 @@ func TestAccess(t *testing.T) {
 
 	nonce, err := noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	createRequest := messages.NewCreateAccountRequest(
@@ -200,42 +195,35 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := createRequest.Sign(currentAuthenticationKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err := createRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	reply, err := ba.CreateAccount(message)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	createResponse, err := messages.ParseCreateAccountResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := createResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, createResponse.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce 1")
-		t.Fail()
+		return fmt.Errorf("bad nonce 1")
 	}
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	rotationHash = hasher.Sum([]byte(nextNextAuthenticationPublicKey))
@@ -253,42 +241,35 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := rotateRequest.Sign(nextAuthenticationKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err = rotateRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	reply, err = ba.RotateAuthenticationKey(message)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	rotateResponse, err := messages.ParseRotateAuthenticationKeyResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := rotateResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, rotateResponse.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce 2")
-		t.Fail()
+		return fmt.Errorf("bad nonce 2")
 	}
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	startAuthenticationRequest := messages.NewStartAuthenticationRequest(
@@ -302,72 +283,60 @@ func TestAccess(t *testing.T) {
 
 	message, err = startAuthenticationRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	reply, err = ba.StartAuthentication(message)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	startAuthenticationResponse, err := messages.ParseStartAuthenticationResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := startAuthenticationResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, startAuthenticationResponse.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce 3")
-		t.Fail()
+		return fmt.Errorf("bad nonce 3")
 	}
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	clientAccessKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	clientNextAccessKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	clientNextNextAccessKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	clientAccessPublicKey, err := clientAccessKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	clientNextAccessPublicKey, err := clientNextAccessKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	clientNextNextAccessPublicKey, err := clientNextNextAccessKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	rotationHash = hasher.Sum([]byte(clientNextAccessPublicKey))
@@ -387,14 +356,12 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := finishAuthenticationRequest.Sign(nextAuthenticationKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err = finishAuthenticationRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	attributes := MockAttributes{
@@ -408,30 +375,25 @@ func TestAccess(t *testing.T) {
 		attributes,
 	)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	finishAuthenticationResponse, err := messages.ParseFinishAuthenticationResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := finishAuthenticationResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, finishAuthenticationRequest.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce")
-		t.Fail()
+		return fmt.Errorf("bad nonce")
 	}
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	rotationHash = hasher.Sum([]byte(clientNextNextAccessPublicKey))
@@ -448,42 +410,35 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := refreshAccessTokenRequest.Sign(clientNextAccessKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err = refreshAccessTokenRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	reply, err = ba.RefreshAccessToken(message)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	refreshAccessTokenResponse, err := messages.ParseRefreshAccessTokenResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := refreshAccessTokenResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, refreshAccessTokenResponse.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce")
-		t.Fail()
+		return fmt.Errorf("bad nonce")
 	}
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	accessRequest := NewFakeAccessRequest(
@@ -497,53 +452,45 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := accessRequest.Sign(clientNextAccessKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err = accessRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	verifiedIdentity, verifiedAttributes, err := av.Verify(message, &MockAttributes{})
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(verifiedIdentity, identity) {
-		fmt.Printf("incorrect identity verified")
-		t.Fail()
+		return fmt.Errorf("incorrect identity verified")
 	}
 
 	if !slices.Equal(attributes.PermissionsByRole["admin"], verifiedAttributes.PermissionsByRole["admin"]) {
-		fmt.Printf("attribute mismatch")
+		return fmt.Errorf("attribute mismatch")
 	}
 
 	recoveredAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveredNextAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveredAuthenticationPublicKey, err := recoveredAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveredNextAuthenticationPublicKey, err := recoveredNextAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoveredDevice := hasher.Sum([]byte(recoveredAuthenticationPublicKey))
@@ -551,8 +498,7 @@ func TestAccess(t *testing.T) {
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoverRequest := messages.NewRecoverAccountRequest(
@@ -569,60 +515,50 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := recoverRequest.Sign(recoveryKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err = recoverRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	reply, err = ba.RecoverAccount(message)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	recoverAccountResponse, err := messages.ParseRecoverAccountResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := recoverAccountResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, recoverAccountResponse.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce")
-		t.Fail()
+		return fmt.Errorf("bad nonce")
 	}
 
 	linkedAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkedNextAuthenticationKey, err := crypto.NewSecp256r1()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkedAuthenticationPublicKey, err := linkedAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkedNextAuthenticationPublicKey, err := linkedNextAuthenticationKey.Public()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkedDevice := hasher.Sum([]byte(linkedAuthenticationPublicKey))
@@ -630,8 +566,7 @@ func TestAccess(t *testing.T) {
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkContainer := messages.NewLinkContainer(
@@ -647,8 +582,7 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := linkContainer.Sign(linkedAuthenticationKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkDeviceRequest := messages.NewLinkDeviceRequest(
@@ -663,35 +597,31 @@ func TestAccess(t *testing.T) {
 	)
 
 	if err := linkDeviceRequest.Sign(recoveredAuthenticationKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	message, err = linkDeviceRequest.Serialize()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	reply, err = ba.LinkDevice(message)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	linkDeviceResponse, err := messages.ParseLinkDeviceResponse(reply)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if err := linkDeviceResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
-		fmt.Printf("error: %v\n", err)
-		t.Fail()
+		return err
 	}
 
 	if !strings.EqualFold(nonce, linkDeviceResponse.Payload.Access.Nonce) {
-		fmt.Printf("bad nonce")
-		t.Fail()
+		return fmt.Errorf("bad nonce")
 	}
+
+	return nil
 }
