@@ -97,8 +97,8 @@ func (k *Secp256r1) Sign(message []byte) (string, error) {
 	}
 
 	signatureBytes := make([]byte, 66)
-	copy(signatureBytes[2:34], signature.R.Bytes())
-	copy(signatureBytes[34:66], signature.S.Bytes())
+	signature.R.FillBytes(signatureBytes[2:34])
+	signature.S.FillBytes(signatureBytes[34:66])
 
 	base64Signature := base64.URLEncoding.EncodeToString(signatureBytes)
 	runes := []rune(base64Signature)
@@ -127,9 +127,9 @@ func (v *Secp256r1Verifier) Verify(signature, publicKey string, message []byte) 
 
 	x, y := elliptic.UnmarshalCompressed(elliptic.P256(), publicKeyBytes)
 	uncompressedKey := [65]byte{}
-	uncompressedKey[0] = 4
-	copy(uncompressedKey[1:33], x.Bytes())
-	copy(uncompressedKey[33:65], y.Bytes())
+	uncompressedKey[0] = 0x04
+	x.FillBytes(uncompressedKey[1:33])
+	y.FillBytes(uncompressedKey[33:65])
 
 	cryptoKey, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), uncompressedKey[:])
 	if err != nil {
