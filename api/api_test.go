@@ -600,4 +600,98 @@ func TestAccess(t *testing.T) {
 		fmt.Printf("bad nonce")
 		t.Fail()
 	}
+
+	linkedAuthenticationKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkedNextAuthenticationKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkedAuthenticationPublicKey, err := linkedAuthenticationKey.Public()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkedNextAuthenticationPublicKey, err := linkedNextAuthenticationKey.Public()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkedDevice := hasher.Sum([]byte(linkedAuthenticationPublicKey))
+	rotationHash = hasher.Sum([]byte(linkedNextAuthenticationPublicKey))
+
+	nonce, err = noncer.Generate128()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkContainer := messages.NewLinkContainer(
+		messages.LinkContainerPayload{
+			Authentication: messages.LinkContainerAuthentication{
+				Device:       linkedDevice,
+				Identity:     identity,
+				PublicKey:    linkedAuthenticationPublicKey,
+				RotationHash: rotationHash,
+			},
+		},
+		nil,
+	)
+
+	if err := linkContainer.Sign(linkedAuthenticationKey); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkDeviceRequest := messages.NewLinkDeviceRequest(
+		messages.LinkDeviceRequestPayload{
+			Authentication: messages.LinkDeviceRequestAuthentication{
+				Device:   recoveredDevice,
+				Identity: identity,
+			},
+			Link: *linkContainer,
+		},
+		nonce,
+	)
+
+	if err := linkDeviceRequest.Sign(recoveredAuthenticationKey); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	message, err = linkDeviceRequest.Serialize()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	reply, err = ba.LinkDevice(message)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	linkDeviceResponse, err := messages.ParseLinkDeviceResponse(reply)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	if err := linkDeviceResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	if !strings.EqualFold(nonce, linkDeviceResponse.Payload.Access.Nonce) {
+		fmt.Printf("bad nonce")
+		t.Fail()
+	}
 }
