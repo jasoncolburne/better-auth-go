@@ -1,5 +1,5 @@
 package storageinterfaces
 
 type AccessNonceStore interface {
-	Reserve(accountId, nonce string) error
+	Reserve(identity, nonce string) error
 }

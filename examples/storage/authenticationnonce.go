@@ -24,13 +24,13 @@ func NewInMemoryAuthenticationNonceStore(nonceLifetime time.Duration) *InMemoryA
 	}
 }
 
-func (s *InMemoryAuthenticationNonceStore) Generate(accountId string) (string, error) {
+func (s *InMemoryAuthenticationNonceStore) Generate(identity string) (string, error) {
 	nonce, err := s.noncer.Generate128()
 	if err != nil {
 		return "", err
 	}
 
-	s.dataByNonce[nonce] = accountId
+	s.dataByNonce[nonce] = identity
 	s.nonceExpirations[nonce] = time.Now().Add(s.lifetime)
 
 	return nonce, nil
