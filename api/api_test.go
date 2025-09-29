@@ -521,4 +521,83 @@ func TestAccess(t *testing.T) {
 	if !slices.Equal(attributes.PermissionsByRole["admin"], verifiedAttributes.PermissionsByRole["admin"]) {
 		fmt.Printf("attribute mismatch")
 	}
+
+	recoveredAuthenticationKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	recoveredNextAuthenticationKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	recoveredAuthenticationPublicKey, err := recoveredAuthenticationKey.Public()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	recoveredNextAuthenticationPublicKey, err := recoveredNextAuthenticationKey.Public()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	recoveredDevice := hasher.Sum([]byte(recoveredAuthenticationPublicKey))
+	rotationHash = hasher.Sum([]byte(recoveredNextAuthenticationPublicKey))
+
+	nonce, err = noncer.Generate128()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	recoverRequest := messages.NewRecoverAccountRequest(
+		messages.RecoverAccountRequestPayload{
+			Authentication: messages.RecoverAccountRequestAuthentication{
+				Device:       recoveredDevice,
+				Identity:     identity,
+				PublicKey:    recoveredAuthenticationPublicKey,
+				RecoveryKey:  recoveryPublicKey,
+				RotationHash: rotationHash,
+			},
+		},
+		nonce,
+	)
+
+	if err := recoverRequest.Sign(recoveryKey); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	message, err = recoverRequest.Serialize()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	reply, err = ba.RecoverAccount(message)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	recoverAccountResponse, err := messages.ParseRecoverAccountResponse(reply)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	if err := recoverAccountResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+		fmt.Printf("error: %v\n", err)
+		t.Fail()
+	}
+
+	if !strings.EqualFold(nonce, recoverAccountResponse.Payload.Access.Nonce) {
+		fmt.Printf("bad nonce")
+		t.Fail()
+	}
 }

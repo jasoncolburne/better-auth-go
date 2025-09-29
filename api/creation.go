@@ -31,6 +31,13 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (strin
 		return "", err
 	}
 
+	if err := ba.store.Recovery.Hash.Register(
+		identity,
+		request.Payload.Request.Authentication.RecoveryHash,
+	); err != nil {
+		return "", err
+	}
+
 	if err := ba.store.Authentication.Key.Register(
 		identity,
 		request.Payload.Request.Authentication.Device,
