@@ -180,15 +180,10 @@ func (s *Server) responseKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, error) {
-	identity, attributes, err := s.av.Verify(message, &MockTokenAttributes{})
+	_, _, err := s.av.Verify(message, &MockTokenAttributes{})
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Fprintf(os.Stderr, "access request: %s\n", message)
-	fmt.Fprintf(os.Stderr, " identity: %s\n", identity)
-	fmt.Fprintf(os.Stderr, " attributes: %v\n", attributes)
-	fmt.Fprintf(os.Stderr, "\n")
 
 	request, err := messages.ParseAccessRequest(message, &MockAccessRequest{})
 	if err != nil {
