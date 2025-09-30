@@ -153,14 +153,14 @@ func (at *AccessToken[AttributesType]) Sign(signingKey cryptointerfaces.SigningK
 type AccessRequest[PayloadType any, AttributesType any] SignableMessage[AccessRequestPayload[PayloadType]]
 
 type AccessRequestPayload[PayloadType any] struct {
-	Access  AccessRequestAccess
-	Request PayloadType
+	Access  AccessRequestAccess `json:"access"`
+	Request PayloadType         `json:"request"`
 }
 
 type AccessRequestAccess struct {
-	Nonce     string
-	Timestamp string
-	Token     string
+	Nonce     string `json:"nonce"`
+	Timestamp string `json:"timestamp"`
+	Token     string `json:"token"`
 }
 
 func NewAccessRequest[PayloadType any, AttributesType any, RequestType AccessRequest[PayloadType, AttributesType]](
@@ -181,7 +181,7 @@ func NewAccessRequest[PayloadType any, AttributesType any, RequestType AccessReq
 	}
 }
 
-func ParseAccessRequest[AttributesType any, RequestType AccessRequest[json.RawMessage, AttributesType]](message string, u *RequestType) (*RequestType, error) {
+func ParseAccessRequest[PayloadType any, AttributesType any, RequestType AccessRequest[PayloadType, AttributesType]](message string, u *RequestType) (*RequestType, error) {
 	if err := json.Unmarshal([]byte(message), u); err != nil {
 		return nil, err
 	}
