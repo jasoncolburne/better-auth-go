@@ -12,6 +12,7 @@ type RecoverAccountRequestAuthentication struct {
 	Device       string `json:"device"`
 	Identity     string `json:"identity"`
 	PublicKey    string `json:"publicKey"`
+	RecoveryHash string `json:"recoveryHash"`
 	RecoveryKey  string `json:"recoveryKey"`
 	RotationHash string `json:"rotationHash"`
 }

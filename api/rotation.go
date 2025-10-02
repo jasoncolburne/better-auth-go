@@ -18,7 +18,7 @@ func (ba *BetterAuthServer[AttributesType]) RotateAuthenticationKey(message stri
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
-		request.Payload.Request.Authentication.RotationHash,
+		&request.Payload.Request.Authentication.RotationHash,
 	); err != nil {
 		return "", err
 	}

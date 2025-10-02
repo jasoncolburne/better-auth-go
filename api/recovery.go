@@ -20,6 +20,12 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 		return "", err
 	}
 
+	if err := ba.store.Authentication.Key.RevokeDevices(
+		request.Payload.Request.Authentication.Identity,
+	); err != nil {
+		return "", err
+	}
+
 	if err := ba.store.Authentication.Key.Register(
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,

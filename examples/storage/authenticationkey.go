@@ -8,8 +8,8 @@ import (
 )
 
 type KeyState struct {
-	current    string
-	nextDigest string
+	current      string
+	rotationHash *string
 }
 
 type InMemoryAuthenticationKeyStore struct {
@@ -24,7 +24,7 @@ func NewInMemoryAuthenticationKeyStore(hasher cryptointerfaces.Hasher) *InMemory
 	}
 }
 
-func (s *InMemoryAuthenticationKeyStore) Register(identity, device, current, nextDigest string, existingIdentity bool) error {
+func (s *InMemoryAuthenticationKeyStore) Register(identity, device, current, rotationHash string, existingIdentity bool) error {
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		devices = map[string]KeyState{}
@@ -36,8 +36,8 @@ func (s *InMemoryAuthenticationKeyStore) Register(identity, device, current, nex
 	}
 
 	devices[device] = KeyState{
-		current:    current,
-		nextDigest: nextDigest,
+		current:      current,
+		rotationHash: &rotationHash,
 	}
 
 	s.knownDevices[identity] = devices
@@ -59,7 +59,7 @@ func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string
 	return instance.current, nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, current, nextDigest string) error {
+func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey string, rotationHash *string) error {
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		return fmt.Errorf("account not found")
@@ -70,18 +70,41 @@ func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, current, nextD
 		return fmt.Errorf("device not found")
 	}
 
-	currentDigest := s.hasher.Sum([]byte(current))
+	if instance.rotationHash == nil {
+		return fmt.Errorf("device access revoked")
+	}
 
-	if !strings.EqualFold(currentDigest, instance.nextDigest) {
+	hash := s.hasher.Sum([]byte(publicKey))
+
+	if !strings.EqualFold(hash, *instance.rotationHash) {
 		return fmt.Errorf("hash mismatch")
 	}
 
 	devices[device] = KeyState{
-		current:    current,
-		nextDigest: nextDigest,
+		current:      publicKey,
+		rotationHash: rotationHash,
 	}
 
 	s.knownDevices[identity] = devices
+
+	return nil
+}
+
+func (s *InMemoryAuthenticationKeyStore) RevokeDevice(identity, device string) error {
+	devices, ok := s.knownDevices[identity]
+	if !ok {
+		return fmt.Errorf("account not found")
+	}
+
+	delete(devices, device)
+
+	s.knownDevices[identity] = devices
+
+	return nil
+}
+
+func (s *InMemoryAuthenticationKeyStore) RevokeDevices(identity string) error {
+	s.knownDevices[identity] = map[string]KeyState{}
 
 	return nil
 }

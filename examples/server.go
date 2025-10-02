@@ -151,6 +151,10 @@ func (s *Server) link(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, s.ba.LinkDevice)
 }
 
+func (s *Server) unlink(w http.ResponseWriter, r *http.Request) {
+	wrapResponse(w, r, s.ba.UnlinkDevice)
+}
+
 func (s *Server) startAuthentication(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, s.ba.StartAuthentication)
 }
@@ -237,15 +241,16 @@ func (s *Server) badNonce(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) StartServer() error {
-	http.HandleFunc("/register/create", s.create)
-	http.HandleFunc("/register/recover", s.recover)
-	http.HandleFunc("/register/link", s.link)
+	http.HandleFunc("/account/create", s.create)
 
 	http.HandleFunc("/authenticate/start", s.startAuthentication)
 	http.HandleFunc("/authenticate/finish", s.finishAuthentication)
 
 	http.HandleFunc("/rotate/authentication", s.rotateAuthentication)
 	http.HandleFunc("/rotate/access", s.rotateAccess)
+	http.HandleFunc("/rotate/recover", s.recover)
+	http.HandleFunc("/rotate/link", s.link)
+	http.HandleFunc("/rotate/unlink", s.unlink)
 
 	http.HandleFunc("/key/response", s.responseKey)
 
