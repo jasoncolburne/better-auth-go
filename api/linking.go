@@ -16,13 +16,6 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		return "", err
 	}
 
-	ba.store.Authentication.Key.Rotate(
-		request.Payload.Request.Authentication.Identity,
-		request.Payload.Request.Authentication.Device,
-		request.Payload.Request.Authentication.PublicKey,
-		request.Payload.Request.Authentication.RotationHash,
-	)
-
 	linkContainer := messages.NewLinkContainer(
 		request.Payload.Request.Link.Payload,
 		request.Payload.Request.Link.Signature,
@@ -38,6 +31,13 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 	if linkContainer.Payload.Authentication.Identity != request.Payload.Request.Authentication.Identity {
 		return "", fmt.Errorf("mismatched identities")
 	}
+
+	ba.store.Authentication.Key.Rotate(
+		request.Payload.Request.Authentication.Identity,
+		request.Payload.Request.Authentication.Device,
+		request.Payload.Request.Authentication.PublicKey,
+		request.Payload.Request.Authentication.RotationHash,
+	)
 
 	if err := ba.store.Authentication.Key.Register(
 		linkContainer.Payload.Authentication.Identity,
