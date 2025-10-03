@@ -27,16 +27,18 @@ func (store *InMemoryRecoveryHashStore) Register(identity, hash string) error {
 	return nil
 }
 
-func (store *InMemoryRecoveryHashStore) Validate(identity, hash string) error {
+func (store *InMemoryRecoveryHashStore) Rotate(identity, oldHash, newHash string) error {
 	stored, ok := store.dataByIdentity[identity]
 
 	if !ok {
 		return fmt.Errorf("not found")
 	}
 
-	if !strings.EqualFold(stored, hash) {
+	if !strings.EqualFold(stored, oldHash) {
 		return fmt.Errorf("incorrect hash")
 	}
+
+	store.dataByIdentity[identity] = newHash
 
 	return nil
 }
