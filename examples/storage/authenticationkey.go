@@ -8,7 +8,7 @@ import (
 )
 
 type KeyState struct {
-	current      string
+	publicKey    string
 	rotationHash string
 }
 
@@ -24,7 +24,7 @@ func NewInMemoryAuthenticationKeyStore(hasher cryptointerfaces.Hasher) *InMemory
 	}
 }
 
-func (s *InMemoryAuthenticationKeyStore) Register(identity, device, current, rotationHash string, existingIdentity bool) error {
+func (s *InMemoryAuthenticationKeyStore) Register(identity, device, publicKey, rotationHash string, existingIdentity bool) error {
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		devices = map[string]KeyState{}
@@ -36,7 +36,7 @@ func (s *InMemoryAuthenticationKeyStore) Register(identity, device, current, rot
 	}
 
 	devices[device] = KeyState{
-		current:      current,
+		publicKey:    publicKey,
 		rotationHash: rotationHash,
 	}
 
@@ -56,7 +56,7 @@ func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string
 		return "", fmt.Errorf("device not found")
 	}
 
-	return instance.current, nil
+	return instance.publicKey, nil
 }
 
 func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rotationHash string) error {
@@ -77,7 +77,7 @@ func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rot
 	}
 
 	devices[device] = KeyState{
-		current:      publicKey,
+		publicKey:    publicKey,
 		rotationHash: rotationHash,
 	}
 

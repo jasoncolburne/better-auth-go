@@ -6,8 +6,8 @@ type AuthenticationNonceStore interface {
 }
 
 type AuthenticationKeyStore interface {
-	Register(identity, device, current, rotationHash string, existingIdentity bool) error
-	Rotate(identity, device, current, rotationHash string) error
+	Register(identity, device, publicKey, rotationHash string, existingIdentity bool) error
+	Rotate(identity, device, publicKey, rotationHash string) error
 	Public(identity, device string) (string, error)
 	RevokeDevice(identity, device string) error
 	RevokeDevices(identity string) error
