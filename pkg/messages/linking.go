@@ -66,12 +66,18 @@ type UnlinkDeviceRequest = ClientRequest[UnlinkDeviceRequestPayload]
 
 type UnlinkDeviceRequestPayload struct {
 	Authentication UnlinkDeviceRequestAuthentication `json:"authentication"`
+	Link           UnlinkDeviceRequestLink           `json:"link"`
 }
 
 type UnlinkDeviceRequestAuthentication struct {
-	Device    string `json:"device"`
-	Identity  string `json:"identity"`
-	PublicKey string `json:"publicKey"`
+	Device       string `json:"device"`
+	Identity     string `json:"identity"`
+	PublicKey    string `json:"publicKey"`
+	RotationHash string `json:"rotationHash"`
+}
+
+type UnlinkDeviceRequestLink struct {
+	Device string `json:"device"`
 }
 
 func NewUnlinkDeviceRequest(payload UnlinkDeviceRequestPayload, nonce string) *UnlinkDeviceRequest {

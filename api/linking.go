@@ -16,7 +16,7 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
-		&request.Payload.Request.Authentication.RotationHash,
+		request.Payload.Request.Authentication.RotationHash,
 	)
 
 	publicKey, err := ba.store.Authentication.Key.Public(
@@ -90,7 +90,7 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
-		nil,
+		request.Payload.Request.Authentication.RotationHash,
 	); err != nil {
 		return "", err
 	}
@@ -109,7 +109,7 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 
 	if err := ba.store.Authentication.Key.RevokeDevice(
 		request.Payload.Request.Authentication.Identity,
-		request.Payload.Request.Authentication.Device,
+		request.Payload.Request.Link.Device,
 	); err != nil {
 		return "", err
 	}

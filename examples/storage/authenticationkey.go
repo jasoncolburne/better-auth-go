@@ -9,7 +9,7 @@ import (
 
 type KeyState struct {
 	current      string
-	rotationHash *string
+	rotationHash string
 }
 
 type InMemoryAuthenticationKeyStore struct {
@@ -37,7 +37,7 @@ func (s *InMemoryAuthenticationKeyStore) Register(identity, device, current, rot
 
 	devices[device] = KeyState{
 		current:      current,
-		rotationHash: &rotationHash,
+		rotationHash: rotationHash,
 	}
 
 	s.knownDevices[identity] = devices
@@ -59,7 +59,7 @@ func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string
 	return instance.current, nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey string, rotationHash *string) error {
+func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rotationHash string) error {
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		return fmt.Errorf("account not found")
@@ -70,13 +70,9 @@ func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey stri
 		return fmt.Errorf("device not found")
 	}
 
-	if instance.rotationHash == nil {
-		return fmt.Errorf("device access revoked")
-	}
-
 	hash := s.hasher.Sum([]byte(publicKey))
 
-	if !strings.EqualFold(hash, *instance.rotationHash) {
+	if !strings.EqualFold(hash, instance.rotationHash) {
 		return fmt.Errorf("hash mismatch")
 	}
 
