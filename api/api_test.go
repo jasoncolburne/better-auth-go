@@ -483,6 +483,11 @@ func testFlow() error {
 		return err
 	}
 
+	nextRecoveryKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		return err
+	}
+
 	recoveredAuthenticationPublicKey, err := recoveredAuthenticationKey.Public()
 	if err != nil {
 		return err
@@ -493,8 +498,14 @@ func testFlow() error {
 		return err
 	}
 
+	nextRecoveryPublicKey, err := nextRecoveryKey.Public()
+	if err != nil {
+		return err
+	}
+
 	recoveredDevice := hasher.Sum([]byte(recoveredAuthenticationPublicKey))
 	rotationHash = hasher.Sum([]byte(recoveredNextAuthenticationPublicKey))
+	nextRecoveryHash := hasher.Sum([]byte(nextRecoveryPublicKey))
 
 	nonce, err = noncer.Generate128()
 	if err != nil {
@@ -507,6 +518,7 @@ func testFlow() error {
 				Device:       recoveredDevice,
 				Identity:     identity,
 				PublicKey:    recoveredAuthenticationPublicKey,
+				RecoveryHash: nextRecoveryHash,
 				RecoveryKey:  recoveryPublicKey,
 				RotationHash: rotationHash,
 			},
@@ -585,18 +597,32 @@ func testFlow() error {
 		return err
 	}
 
+	recoveredNextNextAuthenticationKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		return err
+	}
+
+	recoveredNextNextAuthenticationPublicKey, err := recoveredNextNextAuthenticationKey.Public()
+	if err != nil {
+		return err
+	}
+
+	recoveredNextRotationHash := hasher.Sum([]byte(recoveredNextNextAuthenticationPublicKey))
+
 	linkDeviceRequest := messages.NewLinkDeviceRequest(
 		messages.LinkDeviceRequestPayload{
 			Authentication: messages.LinkDeviceRequestAuthentication{
-				Device:   recoveredDevice,
-				Identity: identity,
+				Device:       recoveredDevice,
+				Identity:     identity,
+				PublicKey:    recoveredNextAuthenticationPublicKey,
+				RotationHash: recoveredNextRotationHash,
 			},
 			Link: *linkContainer,
 		},
 		nonce,
 	)
 
-	if err := linkDeviceRequest.Sign(recoveredAuthenticationKey); err != nil {
+	if err := linkDeviceRequest.Sign(recoveredNextAuthenticationKey); err != nil {
 		return err
 	}
 
