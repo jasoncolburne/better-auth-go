@@ -12,24 +12,16 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		return "", err
 	}
 
+	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Authentication.PublicKey); err != nil {
+		return "", err
+	}
+
 	ba.store.Authentication.Key.Rotate(
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
 		request.Payload.Request.Authentication.RotationHash,
 	)
-
-	publicKey, err := ba.store.Authentication.Key.Public(
-		request.Payload.Request.Authentication.Identity,
-		request.Payload.Request.Authentication.Device,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	if err := request.Verify(ba.crypto.Verifier, publicKey); err != nil {
-		return "", err
-	}
 
 	linkContainer := messages.NewLinkContainer(
 		request.Payload.Request.Link.Payload,
@@ -86,24 +78,16 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 		return "", err
 	}
 
+	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Authentication.PublicKey); err != nil {
+		return "", err
+	}
+
 	if err := ba.store.Authentication.Key.Rotate(
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
 		request.Payload.Request.Authentication.RotationHash,
 	); err != nil {
-		return "", err
-	}
-
-	publicKey, err := ba.store.Authentication.Key.Public(
-		request.Payload.Request.Authentication.Identity,
-		request.Payload.Request.Authentication.Device,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	if err := request.Verify(ba.crypto.Verifier, publicKey); err != nil {
 		return "", err
 	}
 
