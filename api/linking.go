@@ -12,15 +12,7 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		return "", err
 	}
 
-	publicKey, err := ba.store.Authentication.Key.Public(
-		request.Payload.Request.Authentication.Identity,
-		request.Payload.Request.Authentication.Device,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	if err := request.Verify(ba.crypto.Verifier, publicKey); err != nil {
+	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Authentication.PublicKey); err != nil {
 		return "", err
 	}
 
@@ -40,6 +32,13 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		return "", fmt.Errorf("mismatched identities")
 	}
 
+	ba.store.Authentication.Key.Rotate(
+		request.Payload.Request.Authentication.Identity,
+		request.Payload.Request.Authentication.Device,
+		request.Payload.Request.Authentication.PublicKey,
+		request.Payload.Request.Authentication.RotationHash,
+	)
+
 	if err := ba.store.Authentication.Key.Register(
 		linkContainer.Payload.Authentication.Identity,
 		linkContainer.Payload.Authentication.Device,
@@ -57,6 +56,55 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 
 	response := messages.NewLinkDeviceResponse(
 		messages.LinkDeviceResponsePayload{},
+		responseKeyHash,
+		request.Payload.Access.Nonce,
+	)
+
+	if err := response.Sign(ba.crypto.KeyPair.Response); err != nil {
+		return "", err
+	}
+
+	reply, err := response.Serialize()
+	if err != nil {
+		return "", err
+	}
+
+	return reply, nil
+}
+
+func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string, error) {
+	request, err := messages.ParseUnlinkDeviceRequest(message)
+	if err != nil {
+		return "", err
+	}
+
+	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Authentication.PublicKey); err != nil {
+		return "", err
+	}
+
+	if err := ba.store.Authentication.Key.Rotate(
+		request.Payload.Request.Authentication.Identity,
+		request.Payload.Request.Authentication.Device,
+		request.Payload.Request.Authentication.PublicKey,
+		request.Payload.Request.Authentication.RotationHash,
+	); err != nil {
+		return "", err
+	}
+
+	if err := ba.store.Authentication.Key.RevokeDevice(
+		request.Payload.Request.Authentication.Identity,
+		request.Payload.Request.Link.Device,
+	); err != nil {
+		return "", err
+	}
+
+	responseKeyHash, err := ba.responseKeyHash()
+	if err != nil {
+		return "", err
+	}
+
+	response := messages.NewUnlinkDeviceResponse(
+		messages.UnlinkDeviceResponsePayload{},
 		responseKeyHash,
 		request.Payload.Access.Nonce,
 	)

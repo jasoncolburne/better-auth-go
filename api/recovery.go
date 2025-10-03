@@ -13,9 +13,16 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 	}
 
 	hash := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.RecoveryKey))
-	if err := ba.store.Recovery.Hash.Validate(
+	if err := ba.store.Recovery.Hash.Rotate(
 		request.Payload.Request.Authentication.Identity,
 		hash,
+		request.Payload.Request.Authentication.RecoveryHash,
+	); err != nil {
+		return "", err
+	}
+
+	if err := ba.store.Authentication.Key.RevokeDevices(
+		request.Payload.Request.Authentication.Identity,
 	); err != nil {
 		return "", err
 	}
