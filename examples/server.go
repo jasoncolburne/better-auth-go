@@ -101,10 +101,16 @@ func NewServer() (*Server, error) {
 		},
 	)
 
+	accessKeyStore := storage.NewVerificationKeyStore()
+	serverAccessIdentity, err := serverAccessKey.Identity()
+	if err != nil {
+		return nil, err
+	}
+	accessKeyStore.Add(serverAccessIdentity, serverAccessKey)
+
 	av := api.NewAccessVerifier[MockTokenAttributes](
 		&api.VerifierCryptoContainer{
-			PublicKey: serverAccessKey,
-			Verifier:  verifier,
+			Verifier: verifier,
 		},
 		&api.VerifierEncodingContainer{
 			TokenEncoder: tokenEncoder,
@@ -112,6 +118,7 @@ func NewServer() (*Server, error) {
 		},
 		&api.VerifierStoreContainer{
 			AccessNonce: accessNonceStore,
+			AccessKey:   accessKeyStore,
 		},
 	)
 
@@ -194,13 +201,10 @@ func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, 
 		return "", err
 	}
 
-	responsePublicKey, err := s.serverResponseKey.Public()
+	serverIdentity, err := s.serverResponseKey.Identity()
 	if err != nil {
 		return "", err
 	}
-
-	hasher := crypto.NewBlake3()
-	responseKeyHash := hasher.Sum([]byte(responsePublicKey))
 
 	nonce := request.Payload.Access.Nonce
 	if badNonce {
@@ -212,7 +216,7 @@ func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, 
 			WasFoo: request.Payload.Request.Foo,
 			WasBar: request.Payload.Request.Bar,
 		},
-		responseKeyHash,
+		serverIdentity,
 		nonce,
 	)
 

@@ -48,14 +48,14 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (strin
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
 
 	response := messages.NewCreateAccountResponse(
 		messages.CreateAccountResponsePayload{},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 

@@ -32,10 +32,10 @@ type CreateAccountResponsePayload struct{}
 
 func NewCreateAccountResponse(
 	payload CreateAccountResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *CreateAccountResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseCreateAccountResponse(message string) (*CreateAccountResponse, error) {

@@ -49,14 +49,14 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
 
 	response := messages.NewLinkDeviceResponse(
 		messages.LinkDeviceResponsePayload{},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 
@@ -98,14 +98,14 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
 
 	response := messages.NewUnlinkDeviceResponse(
 		messages.UnlinkDeviceResponsePayload{},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 

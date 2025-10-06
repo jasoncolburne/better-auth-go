@@ -103,8 +103,8 @@ func ParseClientRequest[PayloadType any, RequestType ClientRequest[PayloadType]]
 }
 
 type ServerAccess struct {
-	Nonce           string `json:"nonce"`
-	ResponseKeyHash string `json:"responseKeyHash"`
+	Nonce          string `json:"nonce"`
+	ServerIdentity string `json:"serverIdentity"`
 }
 
 type ServerPayload[PayloadType any] struct {
@@ -116,14 +116,14 @@ type ServerResponse[PayloadType any] = SignableMessage[ServerPayload[PayloadType
 
 func NewServerResponse[PayloadType any, ResponseType ServerResponse[PayloadType]](
 	payload PayloadType,
-	responseKeyHash,
+	serverIdentity,
 	nonce string,
 ) *ResponseType {
 	return &ResponseType{
 		Payload: ServerPayload[PayloadType]{
 			Access: ServerAccess{
-				Nonce:           nonce,
-				ResponseKeyHash: responseKeyHash,
+				Nonce:          nonce,
+				ServerIdentity: serverIdentity,
 			},
 			Response: payload,
 		},

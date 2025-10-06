@@ -20,7 +20,6 @@ func (ba *BetterAuthServer[AttributesType]) RefreshAccessToken(message string) (
 	tokenString := request.Payload.Request.Access.Token
 	token, err := messages.ParseAccessToken[AttributesType](
 		tokenString,
-		ba.crypto.KeyPair.Access.Verifier().SignatureLength(),
 		ba.encoding.TokenEncoder,
 	)
 	if err != nil {
@@ -60,7 +59,13 @@ func (ba *BetterAuthServer[AttributesType]) RefreshAccessToken(message string) (
 	issuedAt := ba.encoding.Timestamper.Format(now)
 	expiry := ba.encoding.Timestamper.Format(later)
 
+	accessServerIdentity, err := ba.crypto.KeyPair.Access.Identity()
+	if err != nil {
+		return "", err
+	}
+
 	accessToken := messages.NewAccessToken(
+		accessServerIdentity,
 		token.Identity,
 		request.Payload.Request.Access.PublicKey,
 		request.Payload.Request.Access.RotationHash,
@@ -79,7 +84,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshAccessToken(message string) (
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
@@ -90,7 +95,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshAccessToken(message string) (
 				Token: serializedToken,
 			},
 		},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 

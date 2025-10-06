@@ -52,10 +52,10 @@ type LinkDeviceResponsePayload struct{}
 
 func NewLinkDeviceResponse(
 	payload LinkDeviceResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *LinkDeviceResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseLinkDeviceResponse(message string) (*LinkDeviceResponse, error) {
@@ -96,10 +96,10 @@ type UnlinkDeviceResponsePayload struct{}
 
 func NewUnlinkDeviceResponse(
 	payload UnlinkDeviceResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *UnlinkDeviceResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseUnlinkDeviceResponse(message string) (*UnlinkDeviceResponse, error) {

@@ -36,10 +36,10 @@ type RefreshAccessTokenResponseAccess struct {
 
 func NewRefreshAccessTokenResponse(
 	payload RefreshAccessTokenResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *RefreshAccessTokenResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseRefreshAccessTokenResponse(message string) (*RefreshAccessTokenResponse, error) {

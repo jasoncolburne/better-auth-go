@@ -54,3 +54,8 @@ func (*TokenEncoder[AttributesType]) Decode(token string) (string, error) {
 
 	return string(bytes), nil
 }
+
+func (*TokenEncoder[AttributesType]) SignatureLength(token string) (int, error) {
+	// CESR signature format is always 88 characters for secp256r1
+	return 88, nil
+}
