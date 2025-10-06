@@ -82,6 +82,14 @@ func testFlow() error {
 		return err
 	}
 
+	accessIdentity, err := serverAccessKey.Identity()
+	if err != nil {
+		return err
+	}
+
+	accessKeyStore := storage.NewVerificationKeyStore()
+	accessKeyStore.Add(accessIdentity, serverAccessKey)
+
 	ba := api.NewBetterAuthServer[MockAttributes](
 		&api.CryptoContainer{
 			Hasher: hasher,
@@ -117,8 +125,7 @@ func testFlow() error {
 
 	av := api.NewAccessVerifier[MockAttributes](
 		&api.VerifierCryptoContainer{
-			PublicKey: serverAccessKey,
-			Verifier:  verifier,
+			Verifier: verifier,
 		},
 		&api.VerifierEncodingContainer{
 			TokenEncoder: tokenEncoder,
@@ -126,6 +133,7 @@ func testFlow() error {
 		},
 		&api.VerifierStoreContainer{
 			AccessNonce: accessNonceStore,
+			AccessKey:   accessKeyStore,
 		},
 	)
 
