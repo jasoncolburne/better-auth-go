@@ -236,7 +236,7 @@ func testFlow() error {
 
 	rotationHash = hasher.Sum([]byte(nextNextAuthenticationPublicKey))
 
-	rotateRequest := messages.NewRotateDeviceRequest(
+	rotateDeviceRequest := messages.NewRotateDeviceRequest(
 		messages.RotateDeviceRequestPayload{
 			Authentication: messages.RotateDeviceRequestAuthentication{
 				Device:       device,
@@ -248,11 +248,11 @@ func testFlow() error {
 		nonce,
 	)
 
-	if err := rotateRequest.Sign(nextAuthenticationKey); err != nil {
+	if err := rotateDeviceRequest.Sign(nextAuthenticationKey); err != nil {
 		return err
 	}
 
-	message, err = rotateRequest.Serialize()
+	message, err = rotateDeviceRequest.Serialize()
 	if err != nil {
 		return err
 	}
@@ -262,16 +262,16 @@ func testFlow() error {
 		return err
 	}
 
-	rotateResponse, err := messages.ParseRotateDeviceResponse(reply)
+	rotateDeviceResponse, err := messages.ParseRotateDeviceResponse(reply)
 	if err != nil {
 		return err
 	}
 
-	if err := rotateResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+	if err := rotateDeviceResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(nonce, rotateResponse.Payload.Access.Nonce) {
+	if !strings.EqualFold(nonce, rotateDeviceResponse.Payload.Access.Nonce) {
 		return fmt.Errorf("bad nonce 2")
 	}
 
@@ -520,7 +520,7 @@ func testFlow() error {
 		return err
 	}
 
-	recoverRequest := messages.NewRecoverAccountRequest(
+	recoverAccountRequest := messages.NewRecoverAccountRequest(
 		messages.RecoverAccountRequestPayload{
 			Authentication: messages.RecoverAccountRequestAuthentication{
 				Device:       recoveredDevice,
@@ -534,11 +534,11 @@ func testFlow() error {
 		nonce,
 	)
 
-	if err := recoverRequest.Sign(recoveryKey); err != nil {
+	if err := recoverAccountRequest.Sign(recoveryKey); err != nil {
 		return err
 	}
 
-	message, err = recoverRequest.Serialize()
+	message, err = recoverAccountRequest.Serialize()
 	if err != nil {
 		return err
 	}
