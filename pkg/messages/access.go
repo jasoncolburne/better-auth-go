@@ -11,6 +11,7 @@ import (
 
 type AccessToken[AttributesType any] struct {
 	ServerIdentity string         `json:"serverIdentity"`
+	Device         string         `json:"device"`
 	Identity       string         `json:"identity"`
 	PublicKey      string         `json:"publicKey"`
 	RotationHash   string         `json:"rotationHash"`
@@ -24,6 +25,7 @@ type AccessToken[AttributesType any] struct {
 
 func NewAccessToken[AttributesType any](
 	serverIdentity string,
+	device string,
 	identity string,
 	publicKey string,
 	rotationHash string,
@@ -34,6 +36,7 @@ func NewAccessToken[AttributesType any](
 ) *AccessToken[AttributesType] {
 	return &AccessToken[AttributesType]{
 		ServerIdentity: serverIdentity,
+		Device:         device,
 		Identity:       identity,
 		PublicKey:      publicKey,
 		RotationHash:   rotationHash,
@@ -237,23 +240,23 @@ func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 	tokenEncoder encodinginterfaces.TokenEncoder,
 	timestamper encodinginterfaces.Timestamper,
 	attributes *AttributesType,
-) (string, *AttributesType, error) {
+) (*AccessToken[AttributesType], error) {
 	accessToken, err := ParseAccessToken[AttributesType](
 		ar.Payload.Access.Token,
 		tokenEncoder,
 	)
 	if err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	accessKey, err := accessKeyStore.Get(accessToken.ServerIdentity)
 	if err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	serverAccessPublicKey, err := accessKey.Public()
 	if err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	if err := accessToken.VerifyToken(
@@ -261,38 +264,38 @@ func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 		serverAccessPublicKey,
 		timestamper,
 	); err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	composedPayload, err := ar.ComposePayload()
 	if err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	if err := verifier.Verify(*ar.Signature, accessToken.PublicKey, []byte(composedPayload)); err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	now := timestamper.Now()
 
 	accessTime, err := timestamper.Parse(ar.Payload.Access.Timestamp)
 	if err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
 	expiry := accessTime.Add(nonceStore.Lifetime())
 
 	if now.After(expiry) {
-		return "", attributes, fmt.Errorf("stale request")
+		return nil, fmt.Errorf("stale request")
 	}
 
 	if now.Before(accessTime) {
-		return "", attributes, fmt.Errorf("request from future")
+		return nil, fmt.Errorf("request from future")
 	}
 
 	if err := nonceStore.Reserve(ar.Payload.Access.Nonce); err != nil {
-		return "", attributes, err
+		return nil, err
 	}
 
-	return accessToken.Identity, &accessToken.Attributes, nil
+	return accessToken, nil
 }

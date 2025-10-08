@@ -87,6 +87,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateSession(message string, attrib
 
 	accessToken := messages.NewAccessToken(
 		accessServerIdentity,
+		request.Payload.Request.Authentication.Device,
 		identity,
 		request.Payload.Request.Access.PublicKey,
 		request.Payload.Request.Access.RotationHash,
@@ -191,6 +192,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(message string) (stri
 
 	accessToken := messages.NewAccessToken(
 		accessServerIdentity,
+		token.Device,
 		token.Identity,
 		request.Payload.Request.Access.PublicKey,
 		request.Payload.Request.Access.RotationHash,

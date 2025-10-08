@@ -70,4 +70,3 @@ func NewBetterAuthServer[AttributesType any](
 		store:    store,
 	}
 }
-
