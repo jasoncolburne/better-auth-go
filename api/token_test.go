@@ -3,6 +3,7 @@ package api_test
 import (
 	"testing"
 
+	"github.com/jasoncolburne/better-auth-go/examples/crypto"
 	"github.com/jasoncolburne/better-auth-go/examples/encoding"
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
@@ -10,7 +11,38 @@ import (
 func TestTokenParsing(t *testing.T) {
 	tokenEncoder := encoding.NewTokenEncoder[MockAttributes]()
 
-	tokenString := "0IAGTf0y29Ra-8cjCnXS8NlImAi4_KZfaxgr_5iAux1CLoOZ7d5tvFktxb8Xc6pU2pYQkMw0V75fwP537N9dToIyH4sIAAAAAAACA22PXY-iMBSG_wvX203rUBHuOgIDasQ1jC5uNobaKkU-TFtAZ-J_nzoXu8nOnsuT93k_3i3FZc9lzHijhb5ZnoUIiUl_mNkp0isAWHpgCzKMWSaghJvE309VxifT6_no3Nh1G1jfLMZ7ceCGDYJhvIoDqXySVCAcPdfc2VFYlHG-TabDa0leu1NE56Byc8OJv6lB0taqqFx5jGadHfUiTU9OHYrFXp17FmKIdpfMZk80ileGvHS0Eoc5_1P4jVIM1qW92Qb-7keC6-HlxZH-Yjm-Coxilm1Q2-AV3dPO4LLVuRZtE-WqeISHIZDEGWe125Z-BnVHxc9NuQZk3c-XziyS5-2ybt6OpyJ51Faq44xoQ47gCAMEAZykaORh17PR9wnG8PN2RsuvFyFv_yifPGR_UUp-lFwVwRfATSH8n3WutRS001xZ3rt14bI2xcwo9XxbtxV_PHNWi8byfhnznBlkkEJz6_f9fv8A44o2TvkBAAA"
+	tempTokenString := "0IAGTf0y29Ra-8cjCnXS8NlImAi4_KZfaxgr_5iAux1CLoOZ7d5tvFktxb8Xc6pU2pYQkMw0V75fwP537N9dToIyH4sIAAAAAAACA22PXY-iMBSG_wvX203rUBHuOgIDasQ1jC5uNobaKkU-TFtAZ-J_nzoXu8nOnsuT93k_3i3FZc9lzHijhb5ZnoUIiUl_mNkp0isAWHpgCzKMWSaghJvE309VxifT6_no3Nh1G1jfLMZ7ceCGDYJhvIoDqXySVCAcPdfc2VFYlHG-TabDa0leu1NE56Byc8OJv6lB0taqqFx5jGadHfUiTU9OHYrFXp17FmKIdpfMZk80ileGvHS0Eoc5_1P4jVIM1qW92Qb-7keC6-HlxZH-Yjm-Coxilm1Q2-AV3dPO4LLVuRZtE-WqeISHIZDEGWe125Z-BnVHxc9NuQZk3c-XziyS5-2ybt6OpyJ51Faq44xoQ47gCAMEAZykaORh17PR9wnG8PN2RsuvFyFv_yifPGR_UUp-lFwVwRfATSH8n3WutRS001xZ3rt14bI2xcwo9XxbtxV_PHNWi8byfhnznBlkkEJz6_f9fv8A44o2TvkBAAA"
+
+	tempKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		t.Fatalf("Failed to generate key: %v", err)
+	}
+
+	tempToken, err := messages.ParseAccessToken[MockAttributes](tempTokenString, tokenEncoder)
+	if err != nil {
+		t.Fatalf("Failed to parse temp token: %v", err)
+	}
+
+	newToken := messages.NewAccessToken(
+		tempToken.ServerIdentity,
+		tempToken.Device,
+		tempToken.Identity,
+		tempToken.PublicKey,
+		tempToken.RotationHash,
+		tempToken.IssuedAt,
+		tempToken.Expiry,
+		tempToken.RefreshExpiry,
+		tempToken.Attributes,
+	)
+
+	if err := newToken.Sign(tempKey); err != nil {
+		t.Fatalf("Failed to sign token: %v", err)
+	}
+
+	tokenString, err := newToken.SerializeToken(tokenEncoder)
+	if err != nil {
+		t.Fatalf("Failed to serialize token: %v", err)
+	}
 
 	token, err := messages.ParseAccessToken[MockAttributes](tokenString, tokenEncoder)
 	if err != nil {
