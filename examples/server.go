@@ -249,7 +249,7 @@ func (s *Server) StartServer() error {
 	http.HandleFunc("/account/recover", s.recover)
 
 	http.HandleFunc("/session/request", s.startAuthentication)
-	http.HandleFunc("/session/connect", s.finishAuthentication)
+	http.HandleFunc("/session/create", s.finishAuthentication)
 	http.HandleFunc("/session/refresh", s.rotateAccess)
 
 	http.HandleFunc("/device/rotate", s.rotateAuthentication)
