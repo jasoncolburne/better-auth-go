@@ -105,3 +105,47 @@ func NewUnlinkDeviceResponse(
 func ParseUnlinkDeviceResponse(message string) (*UnlinkDeviceResponse, error) {
 	return ParseServerResponse(message, &UnlinkDeviceResponse{})
 }
+
+// request
+
+type RotateDeviceRequest = ClientRequest[RotateDeviceRequestPayload]
+
+type RotateDeviceRequestPayload struct {
+	Authentication RotateDeviceRequestAuthentication `json:"authentication"`
+}
+
+type RotateDeviceRequestAuthentication struct {
+	Device       string `json:"device"`
+	Identity     string `json:"identity"`
+	PublicKey    string `json:"publicKey"`
+	RotationHash string `json:"rotationHash"`
+}
+
+func NewRotateDeviceRequest(
+	payload RotateDeviceRequestPayload,
+	nonce string,
+) *RotateDeviceRequest {
+	return NewClientRequest(payload, nonce)
+}
+
+func ParseRotateDeviceRequest(message string) (*RotateDeviceRequest, error) {
+	return ParseClientRequest(message, &RotateDeviceRequest{})
+}
+
+// response
+
+type RotateDeviceResponse = ServerResponse[RotateDeviceResponsePayload]
+
+type RotateDeviceResponsePayload struct{}
+
+func NewRotateDeviceResponse(
+	payload RotateDeviceResponsePayload,
+	serverIdentity string,
+	nonce string,
+) *RotateDeviceResponse {
+	return NewServerResponse(payload, serverIdentity, nonce)
+}
+
+func ParseRotateDeviceResponse(message string) (*RotateDeviceResponse, error) {
+	return ParseServerResponse(message, &RotateDeviceResponse{})
+}

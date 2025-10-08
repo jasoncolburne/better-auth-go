@@ -163,12 +163,12 @@ func (s *Server) unlink(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) startAuthentication(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, s.ba.StartAuthentication)
+	wrapResponse(w, r, s.ba.RequestSession)
 }
 
 func (s *Server) finishAuthentication(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, func(message string) (string, error) {
-		return s.ba.FinishAuthentication(message, MockTokenAttributes{
+		return s.ba.CreateSession(message, MockTokenAttributes{
 			PermissionsByRole: map[string][]string{
 				"admin": {"read", "write"},
 			},
@@ -177,11 +177,11 @@ func (s *Server) finishAuthentication(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) rotateAuthentication(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, s.ba.RotateAuthenticationKey)
+	wrapResponse(w, r, s.ba.RotateDevice)
 }
 
 func (s *Server) rotateAccess(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, s.ba.RefreshAccessToken)
+	wrapResponse(w, r, s.ba.RefreshSession)
 }
 
 func (s *Server) responseKey(w http.ResponseWriter, r *http.Request) {
