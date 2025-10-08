@@ -71,11 +71,3 @@ func NewBetterAuthServer[AttributesType any](
 	}
 }
 
-func (ba *BetterAuthServer[AttributesType]) responseKeyHash() (string, error) {
-	responseKey, err := ba.crypto.KeyPair.Response.Public()
-	if err != nil {
-		return "", err
-	}
-
-	return ba.crypto.Hasher.Sum([]byte(responseKey)), nil
-}

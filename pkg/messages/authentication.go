@@ -34,10 +34,10 @@ type StartAuthenticationResponseAuthentication struct {
 
 func NewStartAuthenticationResponse(
 	payload StartAuthenticationResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *StartAuthenticationResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseStartAuthenticationResponse(message string) (*StartAuthenticationResponse, error) {
@@ -85,10 +85,10 @@ type FinishAuthenticationResponseAccess struct {
 
 func NewFinishAuthenticationResponse(
 	payload FinishAuthenticationResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *FinishAuthenticationResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseFinishAuthenticationResponse(message string) (*FinishAuthenticationResponse, error) {

@@ -33,6 +33,10 @@ func (k *Secp256r1) Verifier() cryptointerfaces.Verifier {
 	return NewSecp256r1Verifier()
 }
 
+func (k *Secp256r1) Identity() (string, error) {
+	return k.Public()
+}
+
 func (k *Secp256r1) Public() (string, error) {
 	publicKey := k.private.PublicKey
 	publicKeyBytes, err := publicKey.Bytes()
@@ -113,10 +117,6 @@ type Secp256r1Verifier struct {
 
 func NewSecp256r1Verifier() *Secp256r1Verifier {
 	return &Secp256r1Verifier{}
-}
-
-func (v *Secp256r1Verifier) SignatureLength() int {
-	return 88
 }
 
 func (v *Secp256r1Verifier) Verify(signature, publicKey string, message []byte) error {

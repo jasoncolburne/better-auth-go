@@ -23,14 +23,14 @@ func (ba *BetterAuthServer[AttributesType]) RotateAuthenticationKey(message stri
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
 
 	response := messages.NewRotateAuthenticationKeyResponse(
 		messages.RotateAuthenticationKeyResponsePayload{},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 

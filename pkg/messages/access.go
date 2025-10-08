@@ -10,18 +10,20 @@ import (
 )
 
 type AccessToken[AttributesType any] struct {
-	Identity      string         `json:"identity"`
-	PublicKey     string         `json:"publicKey"`
-	RotationHash  string         `json:"rotationHash"`
-	IssuedAt      string         `json:"issuedAt"`
-	Expiry        string         `json:"expiry"`
-	RefreshExpiry string         `json:"refreshExpiry"`
-	Attributes    AttributesType `json:"attributes"`
+	ServerIdentity string         `json:"serverIdentity"`
+	Identity       string         `json:"identity"`
+	PublicKey      string         `json:"publicKey"`
+	RotationHash   string         `json:"rotationHash"`
+	IssuedAt       string         `json:"issuedAt"`
+	Expiry         string         `json:"expiry"`
+	RefreshExpiry  string         `json:"refreshExpiry"`
+	Attributes     AttributesType `json:"attributes"`
 
 	signature *string `json:"-"`
 }
 
 func NewAccessToken[AttributesType any](
+	serverIdentity string,
 	identity string,
 	publicKey string,
 	rotationHash string,
@@ -31,21 +33,26 @@ func NewAccessToken[AttributesType any](
 	attributes AttributesType,
 ) *AccessToken[AttributesType] {
 	return &AccessToken[AttributesType]{
-		Identity:      identity,
-		PublicKey:     publicKey,
-		RotationHash:  rotationHash,
-		IssuedAt:      issuedAt,
-		Expiry:        expiry,
-		RefreshExpiry: refreshExpiry,
-		Attributes:    attributes,
+		ServerIdentity: serverIdentity,
+		Identity:       identity,
+		PublicKey:      publicKey,
+		RotationHash:   rotationHash,
+		IssuedAt:       issuedAt,
+		Expiry:         expiry,
+		RefreshExpiry:  refreshExpiry,
+		Attributes:     attributes,
 	}
 }
 
 func ParseAccessToken[AttributesType any](
 	message string,
-	publicKeyLength int,
 	tokenEncoder encodinginterfaces.TokenEncoder,
 ) (*AccessToken[AttributesType], error) {
+	publicKeyLength, err := tokenEncoder.SignatureLength(message)
+	if err != nil {
+		return nil, err
+	}
+
 	signature := message[:publicKeyLength]
 	rest := message[publicKeyLength:]
 
@@ -226,23 +233,31 @@ func (ar *AccessRequest[PayloadType, AttributesType]) Sign(signer cryptointerfac
 func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 	nonceStore storageinterfaces.TimeLockStore,
 	verifier cryptointerfaces.Verifier,
-	tokenVerifier cryptointerfaces.Verifier,
-	serverAccessPublicKey string,
+	accessKeyStore storageinterfaces.VerificationKeyStore,
 	tokenEncoder encodinginterfaces.TokenEncoder,
 	timestamper encodinginterfaces.Timestamper,
 	attributes *AttributesType,
 ) (string, *AttributesType, error) {
 	accessToken, err := ParseAccessToken[AttributesType](
 		ar.Payload.Access.Token,
-		tokenVerifier.SignatureLength(),
 		tokenEncoder,
 	)
 	if err != nil {
 		return "", attributes, err
 	}
 
+	accessKey, err := accessKeyStore.Get(accessToken.ServerIdentity)
+	if err != nil {
+		return "", attributes, err
+	}
+
+	serverAccessPublicKey, err := accessKey.Public()
+	if err != nil {
+		return "", attributes, err
+	}
+
 	if err := accessToken.VerifyToken(
-		tokenVerifier,
+		accessKey.Verifier(),
 		serverAccessPublicKey,
 		timestamper,
 	); err != nil {

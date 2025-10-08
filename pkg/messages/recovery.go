@@ -33,10 +33,10 @@ type RecoverAccountResponsePayload struct{}
 
 func NewRecoverAccountResponse(
 	payload RecoverAccountResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *RecoverAccountResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseRecoverAccountResponse(message string) (*RecoverAccountResponse, error) {

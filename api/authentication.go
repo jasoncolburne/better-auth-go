@@ -17,7 +17,7 @@ func (ba *BetterAuthServer[AttributesType]) StartAuthentication(message string) 
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
@@ -28,7 +28,7 @@ func (ba *BetterAuthServer[AttributesType]) StartAuthentication(message string) 
 				Nonce: nonce,
 			},
 		},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 
@@ -77,7 +77,13 @@ func (ba *BetterAuthServer[AttributesType]) FinishAuthentication(message string,
 	expiry := ba.encoding.Timestamper.Format(expiryTime)
 	refreshExpiry := ba.encoding.Timestamper.Format(refreshExpiryTime)
 
+	accessServerIdentity, err := ba.crypto.KeyPair.Access.Identity()
+	if err != nil {
+		return "", err
+	}
+
 	accessToken := messages.NewAccessToken(
+		accessServerIdentity,
 		identity,
 		request.Payload.Request.Access.PublicKey,
 		request.Payload.Request.Access.RotationHash,
@@ -96,7 +102,7 @@ func (ba *BetterAuthServer[AttributesType]) FinishAuthentication(message string,
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
@@ -107,7 +113,7 @@ func (ba *BetterAuthServer[AttributesType]) FinishAuthentication(message string,
 				Token: token,
 			},
 		},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 

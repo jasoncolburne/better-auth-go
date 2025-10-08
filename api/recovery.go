@@ -37,14 +37,14 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 		return "", err
 	}
 
-	responseKeyHash, err := ba.responseKeyHash()
+	serverIdentity, err := ba.crypto.KeyPair.Response.Identity()
 	if err != nil {
 		return "", err
 	}
 
 	response := messages.NewRecoverAccountResponse(
 		messages.RecoverAccountResponsePayload{},
-		responseKeyHash,
+		serverIdentity,
 		request.Payload.Access.Nonce,
 	)
 

@@ -16,8 +16,7 @@ type AccessVerifier[AttributesType any] struct {
 }
 
 type VerifierCryptoContainer struct {
-	PublicKey cryptointerfaces.VerificationKey
-	Verifier  cryptointerfaces.Verifier
+	Verifier cryptointerfaces.Verifier
 }
 
 type VerifierCryptoPublicKey struct {
@@ -31,6 +30,7 @@ type VerifierEncodingContainer struct {
 
 type VerifierStoreContainer struct {
 	AccessNonce storageinterfaces.TimeLockStore
+	AccessKey   storageinterfaces.VerificationKeyStore
 }
 
 func NewAccessVerifier[AttributesType any](
@@ -57,17 +57,11 @@ func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *Att
 		return "", attributes, nil
 	}
 
-	accessPublicKey, err := av.crypto.PublicKey.Public()
-	if err != nil {
-		return "", attributes, err
-	}
-
 	var identity string
 	identity, attributes, err = request.VerifyAccess(
 		av.store.AccessNonce,
 		av.crypto.Verifier,
-		av.crypto.PublicKey.Verifier(),
-		accessPublicKey,
+		av.store.AccessKey,
 		av.encoding.TokenEncoder,
 		av.encoding.Timestamper,
 		attributes,

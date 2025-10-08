@@ -34,10 +34,10 @@ type RotateAuthenticationKeyResponsePayload struct{}
 
 func NewRotateAuthenticationKeyResponse(
 	payload RotateAuthenticationKeyResponsePayload,
-	responseKeyHash string,
+	serverIdentity string,
 	nonce string,
 ) *RotateAuthenticationKeyResponse {
-	return NewServerResponse(payload, responseKeyHash, nonce)
+	return NewServerResponse(payload, serverIdentity, nonce)
 }
 
 func ParseRotateAuthenticationKeyResponse(message string) (*RotateAuthenticationKeyResponse, error) {
