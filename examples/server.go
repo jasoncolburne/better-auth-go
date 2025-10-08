@@ -246,15 +246,15 @@ func (s *Server) badNonce(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) StartServer() error {
 	http.HandleFunc("/account/create", s.create)
+	http.HandleFunc("/account/recover", s.recover)
 
-	http.HandleFunc("/authenticate/start", s.startAuthentication)
-	http.HandleFunc("/authenticate/finish", s.finishAuthentication)
+	http.HandleFunc("/session/request", s.startAuthentication)
+	http.HandleFunc("/session/connect", s.finishAuthentication)
+	http.HandleFunc("/session/refresh", s.rotateAccess)
 
-	http.HandleFunc("/rotate/authentication", s.rotateAuthentication)
-	http.HandleFunc("/rotate/access", s.rotateAccess)
-	http.HandleFunc("/rotate/recover", s.recover)
-	http.HandleFunc("/rotate/link", s.link)
-	http.HandleFunc("/rotate/unlink", s.unlink)
+	http.HandleFunc("/device/rotate", s.rotateAuthentication)
+	http.HandleFunc("/device/link", s.link)
+	http.HandleFunc("/device/unlink", s.unlink)
 
 	http.HandleFunc("/key/response", s.responseKey)
 
