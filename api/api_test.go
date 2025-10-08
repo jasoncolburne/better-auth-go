@@ -468,16 +468,24 @@ func testFlow() error {
 		return err
 	}
 
-	verifiedIdentity, verifiedAttributes, err := av.Verify(message, &MockAttributes{})
+	request, token, err := av.Verify(message, &MockAttributes{})
 	if err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(verifiedIdentity, identity) {
+	if request == nil {
+		return fmt.Errorf("null request")
+	}
+
+	if token == nil {
+		return fmt.Errorf("null token")
+	}
+
+	if !strings.EqualFold(token.Identity, identity) {
 		return fmt.Errorf("incorrect identity verified")
 	}
 
-	if !slices.Equal(attributes.PermissionsByRole["admin"], verifiedAttributes.PermissionsByRole["admin"]) {
+	if !slices.Equal(attributes.PermissionsByRole["admin"], token.Attributes.PermissionsByRole["admin"]) {
 		return fmt.Errorf("attribute mismatch")
 	}
 

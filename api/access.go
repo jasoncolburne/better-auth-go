@@ -51,14 +51,13 @@ func ParseAccessScanner[AttributesType any](message string) (*AccessScanner[Attr
 	return messages.ParseAccessRequest(message, &AccessScanner[AttributesType]{})
 }
 
-func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (string, *AttributesType, error) {
+func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (json.RawMessage, *messages.AccessToken[AttributesType], error) {
 	request, err := ParseAccessScanner[AttributesType](message)
 	if err != nil {
-		return "", attributes, nil
+		return nil, nil, err
 	}
 
-	var identity string
-	identity, attributes, err = request.VerifyAccess(
+	token, err := request.VerifyAccess(
 		av.store.AccessNonce,
 		av.crypto.Verifier,
 		av.store.AccessKey,
@@ -67,8 +66,8 @@ func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *Att
 		attributes,
 	)
 	if err != nil {
-		return "", attributes, err
+		return nil, nil, err
 	}
 
-	return identity, attributes, nil
+	return request.Payload.Request, token, nil
 }
