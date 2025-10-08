@@ -236,9 +236,9 @@ func testFlow() error {
 
 	rotationHash = hasher.Sum([]byte(nextNextAuthenticationPublicKey))
 
-	rotateRequest := messages.NewRotateAuthenticationKeyRequest(
-		messages.RotateAuthenticationKeyRequestPayload{
-			Authentication: messages.RotateAuthenticationKeyRequestAuthentication{
+	rotateDeviceRequest := messages.NewRotateDeviceRequest(
+		messages.RotateDeviceRequestPayload{
+			Authentication: messages.RotateDeviceRequestAuthentication{
 				Device:       device,
 				Identity:     identity,
 				PublicKey:    nextAuthenticationPublicKey,
@@ -248,30 +248,30 @@ func testFlow() error {
 		nonce,
 	)
 
-	if err := rotateRequest.Sign(nextAuthenticationKey); err != nil {
+	if err := rotateDeviceRequest.Sign(nextAuthenticationKey); err != nil {
 		return err
 	}
 
-	message, err = rotateRequest.Serialize()
+	message, err = rotateDeviceRequest.Serialize()
 	if err != nil {
 		return err
 	}
 
-	reply, err = ba.RotateAuthenticationKey(message)
+	reply, err = ba.RotateDevice(message)
 	if err != nil {
 		return err
 	}
 
-	rotateResponse, err := messages.ParseRotateAuthenticationKeyResponse(reply)
+	rotateDeviceResponse, err := messages.ParseRotateDeviceResponse(reply)
 	if err != nil {
 		return err
 	}
 
-	if err := rotateResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+	if err := rotateDeviceResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(nonce, rotateResponse.Payload.Access.Nonce) {
+	if !strings.EqualFold(nonce, rotateDeviceResponse.Payload.Access.Nonce) {
 		return fmt.Errorf("bad nonce 2")
 	}
 
@@ -280,35 +280,35 @@ func testFlow() error {
 		return err
 	}
 
-	startAuthenticationRequest := messages.NewStartAuthenticationRequest(
-		messages.StartAuthenticationRequestPayload{
-			Authentication: messages.StartAuthenticationRequestAuthentication{
+	requestSessionRequest := messages.NewRequestSessionRequest(
+		messages.RequestSessionRequestPayload{
+			Authentication: messages.RequestSessionRequestAuthentication{
 				Identity: identity,
 			},
 		},
 		nonce,
 	)
 
-	message, err = startAuthenticationRequest.Serialize()
+	message, err = requestSessionRequest.Serialize()
 	if err != nil {
 		return err
 	}
 
-	reply, err = ba.StartAuthentication(message)
+	reply, err = ba.RequestSession(message)
 	if err != nil {
 		return err
 	}
 
-	startAuthenticationResponse, err := messages.ParseStartAuthenticationResponse(reply)
+	requestSessionResponse, err := messages.ParseRequestSessionResponse(reply)
 	if err != nil {
 		return err
 	}
 
-	if err := startAuthenticationResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+	if err := requestSessionResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(nonce, startAuthenticationResponse.Payload.Access.Nonce) {
+	if !strings.EqualFold(nonce, requestSessionResponse.Payload.Access.Nonce) {
 		return fmt.Errorf("bad nonce 3")
 	}
 
@@ -349,25 +349,25 @@ func testFlow() error {
 
 	rotationHash = hasher.Sum([]byte(clientNextAccessPublicKey))
 
-	finishAuthenticationRequest := messages.NewFinishAuthenticationRequest(
-		messages.FinishAuthenticationRequestPayload{
-			Access: messages.FinishAuthenticationRequestAccess{
+	createSessionRequest := messages.NewCreateSessionRequest(
+		messages.CreateSessionRequestPayload{
+			Access: messages.CreateSessionRequestAccess{
 				PublicKey:    clientAccessPublicKey,
 				RotationHash: rotationHash,
 			},
-			Authentication: messages.FinishAuthenticationRequestAuthentication{
+			Authentication: messages.CreateSessionRequestAuthentication{
 				Device: device,
-				Nonce:  startAuthenticationResponse.Payload.Response.Authentication.Nonce,
+				Nonce:  requestSessionResponse.Payload.Response.Authentication.Nonce,
 			},
 		},
 		nonce,
 	)
 
-	if err := finishAuthenticationRequest.Sign(nextAuthenticationKey); err != nil {
+	if err := createSessionRequest.Sign(nextAuthenticationKey); err != nil {
 		return err
 	}
 
-	message, err = finishAuthenticationRequest.Serialize()
+	message, err = createSessionRequest.Serialize()
 	if err != nil {
 		return err
 	}
@@ -378,7 +378,7 @@ func testFlow() error {
 		},
 	}
 
-	reply, err = ba.FinishAuthentication(
+	reply, err = ba.CreateSession(
 		message,
 		attributes,
 	)
@@ -386,16 +386,16 @@ func testFlow() error {
 		return err
 	}
 
-	finishAuthenticationResponse, err := messages.ParseFinishAuthenticationResponse(reply)
+	createSessionResponse, err := messages.ParseCreateSessionResponse(reply)
 	if err != nil {
 		return err
 	}
 
-	if err := finishAuthenticationResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+	if err := createSessionResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(nonce, finishAuthenticationRequest.Payload.Access.Nonce) {
+	if !strings.EqualFold(nonce, createSessionRequest.Payload.Access.Nonce) {
 		return fmt.Errorf("bad nonce")
 	}
 
@@ -406,41 +406,41 @@ func testFlow() error {
 
 	rotationHash = hasher.Sum([]byte(clientNextNextAccessPublicKey))
 
-	refreshAccessTokenRequest := messages.NewRefreshAccessTokenRequest(
-		messages.RefreshAccessTokenRequestPayload{
-			Access: messages.RefreshAccessTokenRequestAccess{
+	refreshSessionRequest := messages.NewRefreshSessionRequest(
+		messages.RefreshSessionRequestPayload{
+			Access: messages.RefreshSessionRequestAccess{
 				PublicKey:    clientNextAccessPublicKey,
 				RotationHash: rotationHash,
-				Token:        finishAuthenticationResponse.Payload.Response.Access.Token,
+				Token:        createSessionResponse.Payload.Response.Access.Token,
 			},
 		},
 		nonce,
 	)
 
-	if err := refreshAccessTokenRequest.Sign(clientNextAccessKey); err != nil {
+	if err := refreshSessionRequest.Sign(clientNextAccessKey); err != nil {
 		return err
 	}
 
-	message, err = refreshAccessTokenRequest.Serialize()
+	message, err = refreshSessionRequest.Serialize()
 	if err != nil {
 		return err
 	}
 
-	reply, err = ba.RefreshAccessToken(message)
+	reply, err = ba.RefreshSession(message)
 	if err != nil {
 		return err
 	}
 
-	refreshAccessTokenResponse, err := messages.ParseRefreshAccessTokenResponse(reply)
+	refreshSessionResponse, err := messages.ParseRefreshSessionResponse(reply)
 	if err != nil {
 		return err
 	}
 
-	if err := refreshAccessTokenResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+	if err := refreshSessionResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(nonce, refreshAccessTokenResponse.Payload.Access.Nonce) {
+	if !strings.EqualFold(nonce, refreshSessionResponse.Payload.Access.Nonce) {
 		return fmt.Errorf("bad nonce")
 	}
 
@@ -455,7 +455,7 @@ func testFlow() error {
 			Bar: "foo",
 		},
 		timestamper,
-		refreshAccessTokenResponse.Payload.Response.Access.Token,
+		refreshSessionResponse.Payload.Response.Access.Token,
 		nonce,
 	)
 
@@ -520,7 +520,7 @@ func testFlow() error {
 		return err
 	}
 
-	recoverRequest := messages.NewRecoverAccountRequest(
+	recoverAccountRequest := messages.NewRecoverAccountRequest(
 		messages.RecoverAccountRequestPayload{
 			Authentication: messages.RecoverAccountRequestAuthentication{
 				Device:       recoveredDevice,
@@ -534,11 +534,11 @@ func testFlow() error {
 		nonce,
 	)
 
-	if err := recoverRequest.Sign(recoveryKey); err != nil {
+	if err := recoverAccountRequest.Sign(recoveryKey); err != nil {
 		return err
 	}
 
-	message, err = recoverRequest.Serialize()
+	message, err = recoverAccountRequest.Serialize()
 	if err != nil {
 		return err
 	}
