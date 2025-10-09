@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
 )
@@ -13,6 +14,7 @@ type KeyState struct {
 }
 
 type InMemoryAuthenticationKeyStore struct {
+	mu           sync.RWMutex
 	hasher       cryptointerfaces.Hasher
 	knownDevices map[string]map[string]KeyState
 }
@@ -25,6 +27,9 @@ func NewInMemoryAuthenticationKeyStore(hasher cryptointerfaces.Hasher) *InMemory
 }
 
 func (s *InMemoryAuthenticationKeyStore) Register(identity, device, publicKey, rotationHash string, existingIdentity bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		devices = map[string]KeyState{}
@@ -46,6 +51,9 @@ func (s *InMemoryAuthenticationKeyStore) Register(identity, device, publicKey, r
 }
 
 func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		return "", fmt.Errorf("account not found")
@@ -60,6 +68,9 @@ func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string
 }
 
 func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rotationHash string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		return fmt.Errorf("account not found")
@@ -87,6 +98,9 @@ func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rot
 }
 
 func (s *InMemoryAuthenticationKeyStore) RevokeDevice(identity, device string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	devices, ok := s.knownDevices[identity]
 	if !ok {
 		return fmt.Errorf("account not found")
@@ -100,6 +114,9 @@ func (s *InMemoryAuthenticationKeyStore) RevokeDevice(identity, device string) e
 }
 
 func (s *InMemoryAuthenticationKeyStore) RevokeDevices(identity string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.knownDevices[identity] = map[string]KeyState{}
 
 	return nil

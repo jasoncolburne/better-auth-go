@@ -3,9 +3,11 @@ package storage
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type InMemoryRecoveryHashStore struct {
+	mu             sync.RWMutex
 	dataByIdentity map[string]string
 }
 
@@ -16,6 +18,9 @@ func NewInMemoryRecoveryHashStore() *InMemoryRecoveryHashStore {
 }
 
 func (store *InMemoryRecoveryHashStore) Register(identity, hash string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
 	_, ok := store.dataByIdentity[identity]
 
 	if ok {
@@ -28,6 +33,9 @@ func (store *InMemoryRecoveryHashStore) Register(identity, hash string) error {
 }
 
 func (store *InMemoryRecoveryHashStore) Rotate(identity, oldHash, newHash string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
 	stored, ok := store.dataByIdentity[identity]
 
 	if !ok {

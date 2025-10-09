@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/jasoncolburne/better-auth-go/examples/crypto"
@@ -9,6 +10,7 @@ import (
 )
 
 type InMemoryAuthenticationNonceStore struct {
+	mu               sync.RWMutex
 	dataByNonce      map[string]string
 	lifetime         time.Duration
 	nonceExpirations map[string]time.Time
@@ -30,6 +32,9 @@ func (s *InMemoryAuthenticationNonceStore) Generate(identity string) (string, er
 		return "", err
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.dataByNonce[nonce] = identity
 	s.nonceExpirations[nonce] = time.Now().Add(s.lifetime)
 
@@ -37,6 +42,9 @@ func (s *InMemoryAuthenticationNonceStore) Generate(identity string) (string, er
 }
 
 func (s *InMemoryAuthenticationNonceStore) Verify(nonce string) (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	identity, ok := s.dataByNonce[nonce]
 	if !ok {
 		return "", fmt.Errorf("nonce not found")

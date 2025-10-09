@@ -2,10 +2,12 @@ package storage
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
 type InMemoryTimeLockStore struct {
+	mu       sync.RWMutex
 	lifetime time.Duration
 	values   map[string]time.Time
 }
@@ -22,6 +24,9 @@ func (store *InMemoryTimeLockStore) Lifetime() time.Duration {
 }
 
 func (store *InMemoryTimeLockStore) Reserve(value string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
 	validAt, ok := store.values[value]
 
 	if ok {
