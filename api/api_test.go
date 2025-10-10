@@ -180,7 +180,7 @@ func testFlow() error {
 
 	recoveryHash := hasher.Sum([]byte(recoveryPublicKey))
 
-	device := hasher.Sum([]byte(currentKey))
+	device := hasher.Sum([]byte(currentKey + rotationHash))
 	identitySeed := fmt.Sprintf("%s%s%s", currentKey, rotationHash, recoveryHash)
 	identity := hasher.Sum([]byte(identitySeed))
 
@@ -519,8 +519,8 @@ func testFlow() error {
 		return err
 	}
 
-	recoveredDevice := hasher.Sum([]byte(recoveredAuthenticationPublicKey))
 	rotationHash = hasher.Sum([]byte(recoveredNextAuthenticationPublicKey))
+	recoveredDevice := hasher.Sum([]byte(recoveredAuthenticationPublicKey + rotationHash))
 	nextRecoveryHash := hasher.Sum([]byte(nextRecoveryPublicKey))
 
 	nonce, err = noncer.Generate128()
@@ -589,8 +589,8 @@ func testFlow() error {
 		return err
 	}
 
-	linkedDevice := hasher.Sum([]byte(linkedAuthenticationPublicKey))
 	rotationHash = hasher.Sum([]byte(linkedNextAuthenticationPublicKey))
+	linkedDevice := hasher.Sum([]byte(linkedAuthenticationPublicKey + rotationHash))
 
 	nonce, err = noncer.Generate128()
 	if err != nil {

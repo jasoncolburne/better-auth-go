@@ -1,6 +1,10 @@
 package api
 
-import "github.com/jasoncolburne/better-auth-go/pkg/messages"
+import (
+	"fmt"
+
+	"github.com/jasoncolburne/better-auth-go/pkg/messages"
+)
 
 func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (string, error) {
 	request, err := messages.ParseCreateAccountRequest(message)
@@ -23,12 +27,10 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (strin
 		return "", err
 	}
 
-	hash := ba.crypto.Hasher.Sum(
-		[]byte(request.Payload.Request.Authentication.PublicKey),
-	)
+	device := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.PublicKey + request.Payload.Request.Authentication.RotationHash))
 
-	if hash != request.Payload.Request.Authentication.Device {
-		return "", err
+	if device != request.Payload.Request.Authentication.Device {
+		return "", fmt.Errorf("bad device derivation")
 	}
 
 	if err := ba.store.Recovery.Hash.Register(
@@ -79,6 +81,11 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 
 	if err := request.Verify(ba.crypto.Verifier, request.Payload.Request.Authentication.RecoveryKey); err != nil {
 		return "", err
+	}
+
+	device := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.PublicKey + request.Payload.Request.Authentication.RotationHash))
+	if device != request.Payload.Request.Authentication.Device {
+		return "", fmt.Errorf("bad device derivation")
 	}
 
 	hash := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.RecoveryKey))

@@ -32,6 +32,11 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 		return "", fmt.Errorf("mismatched identities")
 	}
 
+	device := ba.crypto.Hasher.Sum([]byte(linkContainer.Payload.Authentication.PublicKey + linkContainer.Payload.Authentication.RotationHash))
+	if device != linkContainer.Payload.Authentication.Device {
+		return "", fmt.Errorf("bad device derivation")
+	}
+
 	ba.store.Authentication.Key.Rotate(
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
