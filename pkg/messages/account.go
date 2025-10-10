@@ -84,3 +84,44 @@ func NewRecoverAccountResponse(
 func ParseRecoverAccountResponse(message string) (*RecoverAccountResponse, error) {
 	return ParseServerResponse(message, &RecoverAccountResponse{})
 }
+
+// request
+
+type DeleteAccountRequest = ClientRequest[DeleteAccountRequestPayload]
+
+type DeleteAccountRequestPayload struct {
+	Authentication DeleteAccountRequestAuthentication `json:"authentication"`
+}
+
+type DeleteAccountRequestAuthentication struct {
+	Device       string `json:"device"`
+	Identity     string `json:"identity"`
+	PublicKey    string `json:"publicKey"`
+	RotationHash string `json:"rotationHash"`
+}
+
+func NewDeleteAccountRequest(payload DeleteAccountRequestPayload, nonce string) *DeleteAccountRequest {
+	return NewClientRequest(payload, nonce)
+}
+
+func ParseDeleteAccountRequest(message string) (*DeleteAccountRequest, error) {
+	return ParseClientRequest(message, &DeleteAccountRequest{})
+}
+
+// response
+
+type DeleteAccountResponse = ServerResponse[DeleteAccountResponsePayload]
+
+type DeleteAccountResponsePayload struct{}
+
+func NewDeleteAccountResponse(
+	payload DeleteAccountResponsePayload,
+	serverIdentity string,
+	nonce string,
+) *DeleteAccountResponse {
+	return NewServerResponse(payload, serverIdentity, nonce)
+}
+
+func ParseDeleteAccountResponse(message string) (*DeleteAccountResponse, error) {
+	return ParseServerResponse(message, &DeleteAccountResponse{})
+}

@@ -154,6 +154,10 @@ func (s *Server) recover(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, s.ba.RecoverAccount)
 }
 
+func (s *Server) delete(w http.ResponseWriter, r *http.Request) {
+	wrapResponse(w, r, s.ba.DeleteAccount)
+}
+
 func (s *Server) link(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, s.ba.LinkDevice)
 }
@@ -247,6 +251,7 @@ func (s *Server) badNonce(w http.ResponseWriter, r *http.Request) {
 func (s *Server) StartServer() error {
 	http.HandleFunc("/account/create", s.create)
 	http.HandleFunc("/account/recover", s.recover)
+	http.HandleFunc("/account/delete", s.delete)
 
 	http.HandleFunc("/session/request", s.startAuthentication)
 	http.HandleFunc("/session/create", s.finishAuthentication)
