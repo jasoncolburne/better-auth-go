@@ -11,4 +11,5 @@ type AuthenticationKeyStore interface {
 	Public(identity, device string) (string, error)
 	RevokeDevice(identity, device string) error
 	RevokeDevices(identity string) error
+	DeleteIdentity(identity string) error
 }

@@ -121,3 +121,17 @@ func (s *InMemoryAuthenticationKeyStore) RevokeDevices(identity string) error {
 
 	return nil
 }
+
+func (s *InMemoryAuthenticationKeyStore) DeleteIdentity(identity string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	_, ok := s.knownDevices[identity]
+	if !ok {
+		return fmt.Errorf("account not found")
+	}
+
+	delete(s.knownDevices, identity)
+
+	return nil
+}
