@@ -665,5 +665,61 @@ func testFlow() error {
 		return fmt.Errorf("bad nonce")
 	}
 
+	linkedNextNextAuthenticationKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		return err
+	}
+
+	linkedNextNextAuthenticationPublicKey, err := linkedNextNextAuthenticationKey.Public()
+	if err != nil {
+		return err
+	}
+
+	linkedNextRotationHash := hasher.Sum([]byte(linkedNextNextAuthenticationPublicKey))
+
+	nonce, err = noncer.Generate128()
+	if err != nil {
+		return err
+	}
+
+	deleteAccountRequest := messages.NewDeleteAccountRequest(
+		messages.DeleteAccountRequestPayload{
+			Authentication: messages.DeleteAccountRequestAuthentication{
+				Device:       linkedDevice,
+				Identity:     identity,
+				PublicKey:    linkedNextAuthenticationPublicKey,
+				RotationHash: linkedNextRotationHash,
+			},
+		},
+		nonce,
+	)
+
+	if err := deleteAccountRequest.Sign(linkedNextAuthenticationKey); err != nil {
+		return err
+	}
+
+	message, err = deleteAccountRequest.Serialize()
+	if err != nil {
+		return err
+	}
+
+	reply, err = ba.DeleteAccount(message)
+	if err != nil {
+		return err
+	}
+
+	deleteAccountResponse, err := messages.ParseDeleteAccountResponse(reply)
+	if err != nil {
+		return err
+	}
+
+	if err := deleteAccountResponse.Verify(serverResponseKey.Verifier(), serverResponsePublicKey); err != nil {
+		return err
+	}
+
+	if !strings.EqualFold(nonce, deleteAccountResponse.Payload.Access.Nonce) {
+		return fmt.Errorf("bad nonce")
+	}
+
 	return nil
 }
