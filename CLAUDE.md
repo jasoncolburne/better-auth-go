@@ -17,6 +17,41 @@ This implementation provides **server-side only** components. For client functio
 - Server Only: [Ruby](https://github.com/jasoncolburne/better-auth-rb)
 - Client Only: [Swift](https://github.com/jasoncolburne/better-auth-swift), [Dart](https://github.com/jasoncolburne/better-auth-dart), [Kotlin](https://github.com/jasoncolburne/better-auth-kt)
 
+## Repository Structure
+
+This repository is a **git submodule** of the parent [better-auth](https://github.com/jasoncolburne/better-auth) specification repository. The parent repository includes all 8 language implementations as submodules and provides orchestration scripts for cross-implementation testing.
+
+### Standardized Build System
+
+All implementations use standardized `Makefile` targets for consistency:
+
+```bash
+make setup          # Download Go modules (go mod download)
+make test           # Run tests (go test ./...)
+make type-check     # Type check (go vet ./...)
+make lint           # Run linter (go vet + golangci-lint if installed)
+make format         # Format code (go fmt ./...)
+make format-check   # Check formatting (go fmt -l .)
+make build          # Build project (go build)
+make clean          # Clean artifacts
+make server         # Run example server (go run examples/server.go)
+```
+
+### Parent Repository Orchestration
+
+The parent repository provides scripts in `scripts/` for running operations across all implementations:
+
+- `scripts/run-setup.sh` - Setup all implementations
+- `scripts/run-unit-tests.sh` - Run tests across all implementations
+- `scripts/run-type-checks.sh` - Run type checkers across all implementations
+- `scripts/run-lints.sh` - Run linters across all implementations
+- `scripts/run-format-checks.sh` - Check formatting across all implementations
+- `scripts/run-integration-tests.sh` - Run cross-language integration tests
+- `scripts/run-all-checks.sh` - Run all checks in sequence
+- `scripts/pull-repos.sh` - Update all submodules
+
+These scripts automatically skip implementations where tooling is not available.
+
 ## Architecture
 
 ### Directory Structure
