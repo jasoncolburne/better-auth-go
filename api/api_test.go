@@ -468,9 +468,13 @@ func testFlow() error {
 		return err
 	}
 
-	request, token, err := av.Verify(message, &MockAttributes{})
+	request, token, verifiedNonce, err := av.Verify(message, &MockAttributes{})
 	if err != nil {
 		return err
+	}
+
+	if verifiedNonce != nonce {
+		return fmt.Errorf("bad nonce")
 	}
 
 	if request == nil {
