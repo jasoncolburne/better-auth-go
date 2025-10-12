@@ -51,10 +51,10 @@ func ParseAccessScanner[AttributesType any](message string) (*AccessScanner[Attr
 	return messages.ParseAccessRequest(message, &AccessScanner[AttributesType]{})
 }
 
-func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (json.RawMessage, *messages.AccessToken[AttributesType], error) {
+func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (json.RawMessage, *messages.AccessToken[AttributesType], string, error) {
 	request, err := ParseAccessScanner[AttributesType](message)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 
 	token, err := request.VerifyAccess(
@@ -66,8 +66,8 @@ func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *Att
 		attributes,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 
-	return request.Payload.Request, token, nil
+	return request.Payload.Request, token, request.Payload.Access.Nonce, nil
 }

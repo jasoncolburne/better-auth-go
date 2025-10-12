@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -195,13 +196,13 @@ func (s *Server) responseKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, error) {
-	_, _, err := s.av.Verify(message, &MockTokenAttributes{})
+	requestJson, _, nonce, err := s.av.Verify(message, &MockTokenAttributes{})
 	if err != nil {
 		return "", err
 	}
 
-	request, err := messages.ParseAccessRequest(message, &MockAccessRequest{})
-	if err != nil {
+	request := &MockRequestPayload{}
+	if err := json.Unmarshal(requestJson, request); err != nil {
 		return "", err
 	}
 
@@ -210,15 +211,14 @@ func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, 
 		return "", err
 	}
 
-	nonce := request.Payload.Access.Nonce
 	if badNonce {
 		nonce = "0A0123456789"
 	}
 
 	response := messages.NewServerResponse(
 		MockResponsePayload{
-			WasFoo: request.Payload.Request.Foo,
-			WasBar: request.Payload.Request.Bar,
+			WasFoo: request.Foo,
+			WasBar: request.Bar,
 		},
 		serverIdentity,
 		nonce,
