@@ -50,3 +50,18 @@ func (store *InMemoryRecoveryHashStore) Rotate(identity, oldHash, newHash string
 
 	return nil
 }
+
+func (store *InMemoryRecoveryHashStore) Change(identity, keyHash string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	_, ok := store.dataByIdentity[identity]
+
+	if !ok {
+		return fmt.Errorf("not found")
+	}
+
+	store.dataByIdentity[identity] = keyHash
+
+	return nil
+}
