@@ -167,6 +167,10 @@ func (s *Server) unlink(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, s.ba.UnlinkDevice)
 }
 
+func (s *Server) changeRecoveryKey(w http.ResponseWriter, r *http.Request) {
+	wrapResponse(w, r, s.ba.ChangeRecoveryKey)
+}
+
 func (s *Server) startAuthentication(w http.ResponseWriter, r *http.Request) {
 	wrapResponse(w, r, s.ba.RequestSession)
 }
@@ -260,6 +264,8 @@ func (s *Server) StartServer() error {
 	http.HandleFunc("/device/rotate", s.rotateAuthentication)
 	http.HandleFunc("/device/link", s.link)
 	http.HandleFunc("/device/unlink", s.unlink)
+
+	http.HandleFunc("/recovery/change", s.changeRecoveryKey)
 
 	http.HandleFunc("/key/response", s.responseKey)
 
