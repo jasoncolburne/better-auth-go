@@ -2,7 +2,8 @@ package encoding
 
 import "time"
 
-const ConsistentNano = `2006-01-02T15:04:05.000000000Z07:00`
+// RFC3339 format with millisecond precision (3 digits)
+const ConsistentMilli = `2006-01-02T15:04:05.000Z07:00`
 
 type Rfc3339Nano struct{}
 
@@ -11,7 +12,7 @@ func NewRfc3339Nano() *Rfc3339Nano {
 }
 
 func (*Rfc3339Nano) Format(when time.Time) string {
-	return when.Format(ConsistentNano)
+	return when.Format(ConsistentMilli)
 }
 
 func (*Rfc3339Nano) Parse(when string) (time.Time, error) {
