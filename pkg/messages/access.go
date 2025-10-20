@@ -103,10 +103,9 @@ func (at *AccessToken[AttributesType]) ComposePayload() (string, error) {
 	return string(composedPayload), nil
 }
 
-func (at *AccessToken[AttributesType]) VerifyToken(
+func (at *AccessToken[AttributesType]) VerifySignature(
 	verifier cryptointerfaces.Verifier,
 	publicKey string,
-	timestamper encodinginterfaces.Timestamper,
 ) error {
 	if at.signature == nil {
 		return fmt.Errorf("nil signature")
@@ -118,6 +117,18 @@ func (at *AccessToken[AttributesType]) VerifyToken(
 	}
 
 	if err := verifier.Verify(*at.signature, publicKey, []byte(composedPayload)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (at *AccessToken[AttributesType]) VerifyTokenForAccess(
+	verifier cryptointerfaces.Verifier,
+	publicKey string,
+	timestamper encodinginterfaces.Timestamper,
+) error {
+	if err := at.VerifySignature(verifier, publicKey); err != nil {
 		return err
 	}
 
@@ -259,7 +270,7 @@ func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 		return nil, err
 	}
 
-	if err := accessToken.VerifyToken(
+	if err := accessToken.VerifyTokenForAccess(
 		accessKey.Verifier(),
 		serverAccessPublicKey,
 		timestamper,

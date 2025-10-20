@@ -157,7 +157,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(message string) (stri
 		return "", err
 	}
 
-	if err := token.VerifyToken(ba.crypto.KeyPair.Access.Verifier(), accessPublicKey, ba.encoding.Timestamper); err != nil {
+	if err := token.VerifySignature(ba.crypto.KeyPair.Access.Verifier(), accessPublicKey); err != nil {
 		return "", err
 	}
 
