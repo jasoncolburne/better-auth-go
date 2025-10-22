@@ -152,7 +152,12 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(message string) (stri
 		return "", err
 	}
 
-	accessPublicKey, err := ba.crypto.KeyPair.Access.Public()
+	accessVerificationKey, err := ba.store.Access.VerificationKey.Get(token.ServerIdentity)
+	if err != nil {
+		return "", err
+	}
+
+	accessPublicKey, err := accessVerificationKey.Public()
 	if err != nil {
 		return "", err
 	}

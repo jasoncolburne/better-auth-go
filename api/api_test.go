@@ -111,7 +111,8 @@ func testFlow() error {
 		},
 		&api.StoresContainer{
 			Access: &api.AccessStoreContainer{
-				KeyHash: accessKeyHashStore,
+				KeyHash:         accessKeyHashStore,
+				VerificationKey: accessKeyStore,
 			},
 			Authentication: &api.AuthenticationStoreContainer{
 				Key:   authenticationKeyStore,
