@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -17,7 +18,7 @@ func NewInMemoryRecoveryHashStore() *InMemoryRecoveryHashStore {
 	}
 }
 
-func (store *InMemoryRecoveryHashStore) Register(identity, hash string) error {
+func (store *InMemoryRecoveryHashStore) Register(ctx context.Context, identity, hash string) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -32,7 +33,7 @@ func (store *InMemoryRecoveryHashStore) Register(identity, hash string) error {
 	return nil
 }
 
-func (store *InMemoryRecoveryHashStore) Rotate(identity, oldHash, newHash string) error {
+func (store *InMemoryRecoveryHashStore) Rotate(ctx context.Context, identity, oldHash, newHash string) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -51,7 +52,7 @@ func (store *InMemoryRecoveryHashStore) Rotate(identity, oldHash, newHash string
 	return nil
 }
 
-func (store *InMemoryRecoveryHashStore) Change(identity, keyHash string) error {
+func (store *InMemoryRecoveryHashStore) Change(ctx context.Context, identity, keyHash string) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 

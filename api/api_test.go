@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -48,6 +49,8 @@ func TestAccess(t *testing.T) {
 }
 
 func testFlow() error {
+	ctx := context.Background()
+
 	accessLifetime := 15 * time.Minute
 	accessWindow := 30 * time.Second
 	refreshLifetime := 12 * time.Hour
@@ -212,7 +215,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err := ba.CreateAccount(message)
+	reply, err := ba.CreateAccount(ctx, message)
 	if err != nil {
 		return err
 	}
@@ -258,7 +261,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err = ba.RotateDevice(message)
+	reply, err = ba.RotateDevice(ctx, message)
 	if err != nil {
 		return err
 	}
@@ -295,7 +298,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err = ba.RequestSession(message)
+	reply, err = ba.RequestSession(ctx, message)
 	if err != nil {
 		return err
 	}
@@ -379,10 +382,7 @@ func testFlow() error {
 		},
 	}
 
-	reply, err = ba.CreateSession(
-		message,
-		attributes,
-	)
+	reply, err = ba.CreateSession(ctx, message, attributes)
 	if err != nil {
 		return err
 	}
@@ -427,7 +427,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err = ba.RefreshSession(message)
+	reply, err = ba.RefreshSession(ctx, message)
 	if err != nil {
 		return err
 	}
@@ -469,7 +469,7 @@ func testFlow() error {
 		return err
 	}
 
-	request, token, verifiedNonce, err := av.Verify(message, &MockAttributes{})
+	request, token, verifiedNonce, err := av.Verify(ctx, message, &MockAttributes{})
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err = ba.RecoverAccount(message)
+	reply, err = ba.RecoverAccount(ctx, message)
 	if err != nil {
 		return err
 	}
@@ -652,7 +652,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err = ba.LinkDevice(message)
+	reply, err = ba.LinkDevice(ctx, message)
 	if err != nil {
 		return err
 	}
@@ -708,7 +708,7 @@ func testFlow() error {
 		return err
 	}
 
-	reply, err = ba.DeleteAccount(message)
+	reply, err = ba.DeleteAccount(ctx, message)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,11 @@
 package storageinterfaces
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type TimeLockStore interface {
 	Lifetime() time.Duration
-	Reserve(value string) error
+	Reserve(ctx context.Context, value string) error
 }

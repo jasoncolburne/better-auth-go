@@ -1,19 +1,21 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[AttributesType]) RequestSession(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RequestSession(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseRequestSessionRequest(message)
 	if err != nil {
 		return "", err
 	}
 
 	nonce, err := ba.store.Authentication.Nonce.Generate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 	)
 	if err != nil {
@@ -47,13 +49,14 @@ func (ba *BetterAuthServer[AttributesType]) RequestSession(message string) (stri
 	return reply, err
 }
 
-func (ba *BetterAuthServer[AttributesType]) CreateSession(message string, attributes AttributesType) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) CreateSession(ctx context.Context, message string, attributes AttributesType) (string, error) {
 	request, err := messages.ParseCreateSessionRequest(message)
 	if err != nil {
 		return "", err
 	}
 
 	identity, err := ba.store.Authentication.Nonce.Verify(
+		ctx,
 		request.Payload.Request.Authentication.Nonce,
 	)
 	if err != nil {
@@ -61,6 +64,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateSession(message string, attrib
 	}
 
 	authenticationPublicKey, err := ba.store.Authentication.Key.Public(
+		ctx,
 		identity,
 		request.Payload.Request.Authentication.Device,
 	)
@@ -133,7 +137,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateSession(message string, attrib
 	return reply, nil
 }
 
-func (ba *BetterAuthServer[AttributesType]) RefreshSession(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RefreshSession(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseRefreshSessionRequest(message)
 	if err != nil {
 		return "", err
@@ -152,7 +156,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(message string) (stri
 		return "", err
 	}
 
-	accessVerificationKey, err := ba.store.Access.VerificationKey.Get(token.ServerIdentity)
+	accessVerificationKey, err := ba.store.Access.VerificationKey.Get(ctx, token.ServerIdentity)
 	if err != nil {
 		return "", err
 	}
@@ -181,7 +185,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(message string) (stri
 		return "", fmt.Errorf("refresh has expired")
 	}
 
-	if err := ba.store.Access.KeyHash.Reserve(hash); err != nil {
+	if err := ba.store.Access.KeyHash.Reserve(ctx, hash); err != nil {
 		return "", err
 	}
 

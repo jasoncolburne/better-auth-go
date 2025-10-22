@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
@@ -51,13 +52,14 @@ func ParseAccessScanner[AttributesType any](message string) (*AccessScanner[Attr
 	return messages.ParseAccessRequest(message, &AccessScanner[AttributesType]{})
 }
 
-func (av *AccessVerifier[AttributesType]) Verify(message string, attributes *AttributesType) (json.RawMessage, *messages.AccessToken[AttributesType], string, error) {
+func (av *AccessVerifier[AttributesType]) Verify(ctx context.Context, message string, attributes *AttributesType) (json.RawMessage, *messages.AccessToken[AttributesType], string, error) {
 	request, err := ParseAccessScanner[AttributesType](message)
 	if err != nil {
 		return nil, nil, "", err
 	}
 
 	token, err := request.VerifyAccess(
+		ctx,
 		av.store.AccessNonce,
 		av.crypto.Verifier,
 		av.store.AccessKey,

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ func (store *InMemoryTimeLockStore) Lifetime() time.Duration {
 	return store.lifetime
 }
 
-func (store *InMemoryTimeLockStore) Reserve(value string) error {
+func (store *InMemoryTimeLockStore) Reserve(ctx context.Context, value string) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 

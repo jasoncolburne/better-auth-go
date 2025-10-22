@@ -1,12 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) LinkDevice(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseLinkDeviceRequest(message)
 	if err != nil {
 		return "", err
@@ -38,6 +39,7 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 	}
 
 	ba.store.Authentication.Key.Rotate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
@@ -45,6 +47,7 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 	)
 
 	if err := ba.store.Authentication.Key.Register(
+		ctx,
 		linkContainer.Payload.Authentication.Identity,
 		linkContainer.Payload.Authentication.Device,
 		linkContainer.Payload.Authentication.PublicKey,
@@ -77,7 +80,7 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(message string) (string, 
 	return reply, nil
 }
 
-func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseUnlinkDeviceRequest(message)
 	if err != nil {
 		return "", err
@@ -88,6 +91,7 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 	}
 
 	if err := ba.store.Authentication.Key.Rotate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
@@ -97,6 +101,7 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 	}
 
 	if err := ba.store.Authentication.Key.RevokeDevice(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Link.Device,
 	); err != nil {
@@ -126,7 +131,7 @@ func (ba *BetterAuthServer[AttributesType]) UnlinkDevice(message string) (string
 	return reply, nil
 }
 
-func (ba *BetterAuthServer[AttributesType]) RotateDevice(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RotateDevice(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseRotateDeviceRequest(message)
 	if err != nil {
 		return "", err
@@ -137,6 +142,7 @@ func (ba *BetterAuthServer[AttributesType]) RotateDevice(message string) (string
 	}
 
 	if err := ba.store.Authentication.Key.Rotate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,

@@ -1,5 +1,7 @@
 package storageinterfaces
 
+import "context"
+
 type AccessNonceStore interface {
-	Reserve(identity, nonce string) error
+	Reserve(ctx context.Context, identity, nonce string) error
 }
