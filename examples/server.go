@@ -69,6 +69,13 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 
+	accessKeyStore := storage.NewVerificationKeyStore()
+	serverAccessIdentity, err := serverAccessKey.Identity()
+	if err != nil {
+		return nil, err
+	}
+	accessKeyStore.Add(serverAccessIdentity, serverAccessKey)
+
 	ba := api.NewBetterAuthServer[MockTokenAttributes](
 		&api.CryptoContainer{
 			Hasher: hasher,
@@ -90,7 +97,8 @@ func NewServer() (*Server, error) {
 		},
 		&api.StoresContainer{
 			Access: &api.AccessStoreContainer{
-				KeyHash: accessKeyHashStore,
+				KeyHash:         accessKeyHashStore,
+				VerificationKey: accessKeyStore,
 			},
 			Authentication: &api.AuthenticationStoreContainer{
 				Key:   authenticationKeyStore,
@@ -101,13 +109,6 @@ func NewServer() (*Server, error) {
 			},
 		},
 	)
-
-	accessKeyStore := storage.NewVerificationKeyStore()
-	serverAccessIdentity, err := serverAccessKey.Identity()
-	if err != nil {
-		return nil, err
-	}
-	accessKeyStore.Add(serverAccessIdentity, serverAccessKey)
 
 	av := api.NewAccessVerifier[MockTokenAttributes](
 		&api.VerifierCryptoContainer{

@@ -45,7 +45,8 @@ type StoresContainer struct {
 }
 
 type AccessStoreContainer struct {
-	KeyHash storageinterfaces.TimeLockStore
+	VerificationKey storageinterfaces.VerificationKeyStore
+	KeyHash         storageinterfaces.TimeLockStore
 }
 
 type AuthenticationStoreContainer struct {
