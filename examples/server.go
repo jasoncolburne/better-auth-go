@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -131,13 +132,16 @@ func NewServer() (*Server, error) {
 	}, nil
 }
 
-func wrapResponse(w http.ResponseWriter, r *http.Request, logic func(message string) (string, error)) {
+func wrapResponse(w http.ResponseWriter, r *http.Request, logic func(ctx context.Context, message string) (string, error)) {
 	var reply string
 
 	message, err := io.ReadAll(r.Body)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	if err == nil {
-		reply, err = logic(string(message))
+		reply, err = logic(ctx, string(message))
 	}
 
 	if err != nil {
@@ -177,8 +181,8 @@ func (s *Server) startAuthentication(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) finishAuthentication(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, func(message string) (string, error) {
-		return s.ba.CreateSession(message, MockTokenAttributes{
+	wrapResponse(w, r, func(ctx context.Context, message string) (string, error) {
+		return s.ba.CreateSession(ctx, message, MockTokenAttributes{
 			PermissionsByRole: map[string][]string{
 				"admin": {"read", "write"},
 			},
@@ -195,13 +199,13 @@ func (s *Server) rotateAccess(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) responseKey(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, func(message string) (string, error) {
+	wrapResponse(w, r, func(ctx context.Context, message string) (string, error) {
 		return s.serverResponseKey.Public()
 	})
 }
 
-func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, error) {
-	requestJson, _, nonce, err := s.av.Verify(message, &MockTokenAttributes{})
+func (s *Server) respondToAccessRequest(ctx context.Context, message string, badNonce bool) (string, error) {
+	requestJson, _, nonce, err := s.av.Verify(ctx, message, &MockTokenAttributes{})
 	if err != nil {
 		return "", err
 	}
@@ -242,14 +246,14 @@ func (s *Server) respondToAccessRequest(message string, badNonce bool) (string, 
 }
 
 func (s *Server) fooBar(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, func(message string) (string, error) {
-		return s.respondToAccessRequest(message, false)
+	wrapResponse(w, r, func(ctx context.Context, message string) (string, error) {
+		return s.respondToAccessRequest(ctx, message, false)
 	})
 }
 
 func (s *Server) badNonce(w http.ResponseWriter, r *http.Request) {
-	wrapResponse(w, r, func(message string) (string, error) {
-		return s.respondToAccessRequest(message, true)
+	wrapResponse(w, r, func(ctx context.Context, message string) (string, error) {
+		return s.respondToAccessRequest(ctx, message, true)
 	})
 }
 

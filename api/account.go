@@ -1,12 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
-func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) CreateAccount(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseCreateAccountRequest(message)
 	if err != nil {
 		return "", err
@@ -34,6 +35,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (strin
 	}
 
 	if err := ba.store.Recovery.Hash.Register(
+		ctx,
 		identity,
 		request.Payload.Request.Authentication.RecoveryHash,
 	); err != nil {
@@ -41,6 +43,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (strin
 	}
 
 	if err := ba.store.Authentication.Key.Register(
+		ctx,
 		identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
@@ -73,7 +76,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(message string) (strin
 	return reply, err
 }
 
-func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) RecoverAccount(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseRecoverAccountRequest(message)
 	if err != nil {
 		return "", err
@@ -90,6 +93,7 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 
 	hash := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.RecoveryKey))
 	if err := ba.store.Recovery.Hash.Rotate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		hash,
 		request.Payload.Request.Authentication.RecoveryHash,
@@ -98,12 +102,14 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 	}
 
 	if err := ba.store.Authentication.Key.RevokeDevices(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 	); err != nil {
 		return "", err
 	}
 
 	if err := ba.store.Authentication.Key.Register(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
@@ -136,7 +142,7 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(message string) (stri
 	return reply, nil
 }
 
-func (ba *BetterAuthServer[AttributesType]) DeleteAccount(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) DeleteAccount(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseDeleteAccountRequest(message)
 	if err != nil {
 		return "", err
@@ -147,6 +153,7 @@ func (ba *BetterAuthServer[AttributesType]) DeleteAccount(message string) (strin
 	}
 
 	if err := ba.store.Authentication.Key.Rotate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
@@ -156,6 +163,7 @@ func (ba *BetterAuthServer[AttributesType]) DeleteAccount(message string) (strin
 	}
 
 	if err := ba.store.Authentication.Key.DeleteIdentity(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 	); err != nil {
 		return "", err
@@ -184,7 +192,7 @@ func (ba *BetterAuthServer[AttributesType]) DeleteAccount(message string) (strin
 	return reply, nil
 }
 
-func (ba *BetterAuthServer[AttributesType]) ChangeRecoveryKey(message string) (string, error) {
+func (ba *BetterAuthServer[AttributesType]) ChangeRecoveryKey(ctx context.Context, message string) (string, error) {
 	request, err := messages.ParseChangeRecoveryKeyRequest(message)
 	if err != nil {
 		return "", err
@@ -195,6 +203,7 @@ func (ba *BetterAuthServer[AttributesType]) ChangeRecoveryKey(message string) (s
 	}
 
 	if err := ba.store.Authentication.Key.Rotate(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.Device,
 		request.Payload.Request.Authentication.PublicKey,
@@ -204,6 +213,7 @@ func (ba *BetterAuthServer[AttributesType]) ChangeRecoveryKey(message string) (s
 	}
 
 	if err := ba.store.Recovery.Hash.Change(
+		ctx,
 		request.Payload.Request.Authentication.Identity,
 		request.Payload.Request.Authentication.RecoveryHash,
 	); err != nil {

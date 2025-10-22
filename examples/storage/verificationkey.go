@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -25,7 +26,7 @@ func (s *VerificationKeyStore) Add(identity string, key cryptointerfaces.Verific
 	s.keys[identity] = key
 }
 
-func (s *VerificationKeyStore) Get(identity string) (cryptointerfaces.VerificationKey, error) {
+func (s *VerificationKeyStore) Get(ctx context.Context, identity string) (cryptointerfaces.VerificationKey, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

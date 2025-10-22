@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -245,6 +246,7 @@ func (ar *AccessRequest[PayloadType, AttributesType]) Sign(signer cryptointerfac
 }
 
 func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
+	ctx context.Context,
 	nonceStore storageinterfaces.TimeLockStore,
 	verifier cryptointerfaces.Verifier,
 	accessKeyStore storageinterfaces.VerificationKeyStore,
@@ -260,7 +262,7 @@ func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 		return nil, err
 	}
 
-	accessKey, err := accessKeyStore.Get(accessToken.ServerIdentity)
+	accessKey, err := accessKeyStore.Get(ctx, accessToken.ServerIdentity)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +306,7 @@ func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 		return nil, fmt.Errorf("request from future")
 	}
 
-	if err := nonceStore.Reserve(ar.Payload.Access.Nonce); err != nil {
+	if err := nonceStore.Reserve(ctx, ar.Payload.Access.Nonce); err != nil {
 		return nil, err
 	}
 

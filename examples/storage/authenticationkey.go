@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -26,7 +27,7 @@ func NewInMemoryAuthenticationKeyStore(hasher cryptointerfaces.Hasher) *InMemory
 	}
 }
 
-func (s *InMemoryAuthenticationKeyStore) Register(identity, device, publicKey, rotationHash string, existingIdentity bool) error {
+func (s *InMemoryAuthenticationKeyStore) Register(ctx context.Context, identity, device, publicKey, rotationHash string, existingIdentity bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -50,7 +51,7 @@ func (s *InMemoryAuthenticationKeyStore) Register(identity, device, publicKey, r
 	return nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string, error) {
+func (s *InMemoryAuthenticationKeyStore) Public(ctx context.Context, identity, device string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -67,7 +68,7 @@ func (s *InMemoryAuthenticationKeyStore) Public(identity, device string) (string
 	return instance.publicKey, nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rotationHash string) error {
+func (s *InMemoryAuthenticationKeyStore) Rotate(ctx context.Context, identity, device, publicKey, rotationHash string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -97,7 +98,7 @@ func (s *InMemoryAuthenticationKeyStore) Rotate(identity, device, publicKey, rot
 	return nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) RevokeDevice(identity, device string) error {
+func (s *InMemoryAuthenticationKeyStore) RevokeDevice(ctx context.Context, identity, device string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -113,7 +114,7 @@ func (s *InMemoryAuthenticationKeyStore) RevokeDevice(identity, device string) e
 	return nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) RevokeDevices(identity string) error {
+func (s *InMemoryAuthenticationKeyStore) RevokeDevices(ctx context.Context, identity string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -122,7 +123,7 @@ func (s *InMemoryAuthenticationKeyStore) RevokeDevices(identity string) error {
 	return nil
 }
 
-func (s *InMemoryAuthenticationKeyStore) DeleteIdentity(identity string) error {
+func (s *InMemoryAuthenticationKeyStore) DeleteIdentity(ctx context.Context, identity string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

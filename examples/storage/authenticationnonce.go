@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -26,7 +27,7 @@ func NewInMemoryAuthenticationNonceStore(nonceLifetime time.Duration) *InMemoryA
 	}
 }
 
-func (s *InMemoryAuthenticationNonceStore) Generate(identity string) (string, error) {
+func (s *InMemoryAuthenticationNonceStore) Generate(ctx context.Context, identity string) (string, error) {
 	nonce, err := s.noncer.Generate128()
 	if err != nil {
 		return "", err
@@ -41,7 +42,7 @@ func (s *InMemoryAuthenticationNonceStore) Generate(identity string) (string, er
 	return nonce, nil
 }
 
-func (s *InMemoryAuthenticationNonceStore) Verify(nonce string) (string, error) {
+func (s *InMemoryAuthenticationNonceStore) Verify(ctx context.Context, nonce string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
