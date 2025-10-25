@@ -175,6 +175,10 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(ctx context.Context, 
 		return "", fmt.Errorf("hash mismatch")
 	}
 
+	if err := ba.store.Authentication.Key.EnsureActive(ctx, token.Identity, token.Device); err != nil {
+		return "", err
+	}
+
 	now := ba.encoding.Timestamper.Now()
 	refreshExpiry, err := ba.encoding.Timestamper.Parse(token.RefreshExpiry)
 	if err != nil {

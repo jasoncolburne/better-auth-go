@@ -136,3 +136,20 @@ func (s *InMemoryAuthenticationKeyStore) DeleteIdentity(ctx context.Context, ide
 
 	return nil
 }
+
+func (s *InMemoryAuthenticationKeyStore) EnsureActive(ctx context.Context, identity, device string) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	devices, ok := s.knownDevices[identity]
+	if !ok {
+		return fmt.Errorf("not found")
+	}
+
+	_, ok = devices[device]
+	if !ok {
+		return fmt.Errorf("not found")
+	}
+
+	return nil
+}
