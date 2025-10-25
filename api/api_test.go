@@ -726,5 +726,52 @@ func testFlow() error {
 		return fmt.Errorf("bad nonce")
 	}
 
+	// Try to refresh session after account deletion - should fail
+	nonce, err = noncer.Generate128()
+	if err != nil {
+		return err
+	}
+
+	nextAccessKey, err := crypto.NewSecp256r1()
+	if err != nil {
+		return err
+	}
+
+	nextAccessPublicKey, err := nextAccessKey.Public()
+	if err != nil {
+		return err
+	}
+
+	rotationHash = hasher.Sum([]byte(nextAccessPublicKey))
+
+	refreshSessionRequest = messages.NewRefreshSessionRequest(
+		messages.RefreshSessionRequestPayload{
+			Access: messages.RefreshSessionRequestAccess{
+				PublicKey:    clientNextNextAccessPublicKey,
+				RotationHash: rotationHash,
+				Token:        refreshSessionResponse.Payload.Response.Access.Token,
+			},
+		},
+		nonce,
+	)
+
+	if err := refreshSessionRequest.Sign(clientNextNextAccessKey); err != nil {
+		return err
+	}
+
+	message, err = refreshSessionRequest.Serialize()
+	if err != nil {
+		return err
+	}
+
+	_, err = ba.RefreshSession(ctx, message)
+	if err == nil {
+		return fmt.Errorf("expected refresh to fail for deleted account")
+	}
+
+	if !strings.Contains(err.Error(), "not found") {
+		return fmt.Errorf("expected 'not found' error, got: %v", err)
+	}
+
 	return nil
 }

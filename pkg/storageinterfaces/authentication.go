@@ -14,4 +14,5 @@ type AuthenticationKeyStore interface {
 	RevokeDevice(ctx context.Context, identity, device string) error
 	RevokeDevices(ctx context.Context, identity string) error
 	DeleteIdentity(ctx context.Context, identity string) error
+	EnsureActive(ctx context.Context, identity, device string) error
 }
