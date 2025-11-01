@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/jasoncolburne/better-auth-go/pkg/errors"
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
@@ -30,12 +30,15 @@ func (ba *BetterAuthServer[AttributesType]) LinkDevice(ctx context.Context, mess
 	}
 
 	if linkContainer.Payload.Authentication.Identity != request.Payload.Request.Authentication.Identity {
-		return "", fmt.Errorf("mismatched identities")
+		return "", errors.NewMismatchedIdentitiesError(
+			linkContainer.Payload.Authentication.Identity,
+			request.Payload.Request.Authentication.Identity,
+		)
 	}
 
 	device := ba.crypto.Hasher.Sum([]byte(linkContainer.Payload.Authentication.PublicKey + linkContainer.Payload.Authentication.RotationHash))
 	if device != linkContainer.Payload.Authentication.Device {
-		return "", fmt.Errorf("bad device derivation")
+		return "", errors.NewInvalidDeviceError(linkContainer.Payload.Authentication.Device, device)
 	}
 
 	ba.store.Authentication.Key.Rotate(
