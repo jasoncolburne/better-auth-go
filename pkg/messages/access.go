@@ -53,13 +53,17 @@ func ParseAccessToken[AttributesType any](
 	message string,
 	tokenEncoder encodinginterfaces.TokenEncoder,
 ) (*AccessToken[AttributesType], error) {
-	publicKeyLength, err := tokenEncoder.SignatureLength(message)
+	signatureLength, err := tokenEncoder.SignatureLength(message)
 	if err != nil {
 		return nil, err
 	}
 
-	signature := message[:publicKeyLength]
-	rest := message[publicKeyLength:]
+	if len(message) < signatureLength {
+		return nil, errors.NewInvalidMessageError("message", "too short for signature")
+	}
+
+	signature := message[:signatureLength]
+	rest := message[signatureLength:]
 
 	tokenString, err := tokenEncoder.Decode(rest)
 	if err != nil {
