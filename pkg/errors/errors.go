@@ -11,9 +11,9 @@ import (
 
 // BetterAuthError represents a standardized error with code and context
 type BetterAuthError struct {
-	Code    string                 `json:"code"`
-	Message string                 `json:"message"`
-	Context map[string]interface{} `json:"context,omitempty"`
+	Code    string         `json:"code"`
+	Message string         `json:"message"`
+	Context map[string]any `json:"context,omitempty"`
 }
 
 // Error implements the error interface
@@ -23,8 +23,8 @@ func (e *BetterAuthError) Error() string {
 
 // MarshalJSON implements custom JSON marshaling
 func (e *BetterAuthError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"error": map[string]interface{}{
+	return json.Marshal(map[string]any{
+		"error": map[string]any{
 			"code":    e.Code,
 			"message": e.Message,
 			"context": e.Context,
@@ -37,14 +37,14 @@ func newError(code, message string) *BetterAuthError {
 	return &BetterAuthError{
 		Code:    code,
 		Message: message,
-		Context: make(map[string]interface{}),
+		Context: make(map[string]any),
 	}
 }
 
 // withContext adds context to an error
-func (e *BetterAuthError) withContext(key string, value interface{}) *BetterAuthError {
+func (e *BetterAuthError) withContext(key string, value any) *BetterAuthError {
 	if e.Context == nil {
-		e.Context = make(map[string]interface{})
+		e.Context = make(map[string]any)
 	}
 	e.Context[key] = value
 	return e
