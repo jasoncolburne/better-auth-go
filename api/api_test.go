@@ -67,7 +67,7 @@ func testFlow() error {
 	recoveryHashStore := storage.NewInMemoryRecoveryHashStore()
 
 	identityVerifier := encoding.NewMockIdentityVerifier(hasher)
-	timestamper := encoding.NewRfc3339Nano()
+	timestamper := encoding.NewRfc3339()
 	tokenEncoder := encoding.NewTokenEncoder[MockAttributes]()
 
 	serverResponseKey, err := crypto.NewSecp256r1()

@@ -57,7 +57,7 @@ func NewServer() (*Server, error) {
 	recoveryHashStore := storage.NewInMemoryRecoveryHashStore()
 
 	identityVerifier := encoding.NewMockIdentityVerifier(hasher)
-	timestamper := encoding.NewRfc3339Nano()
+	timestamper := encoding.NewRfc3339()
 	tokenEncoder := encoding.NewTokenEncoder[MockTokenAttributes]()
 
 	serverResponseKey, err := crypto.NewSecp256r1()
