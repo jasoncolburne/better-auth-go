@@ -3,7 +3,7 @@ package encoding
 import "time"
 
 // RFC3339 format with millisecond precision (3 digits)
-const ConsistentMilli = `2006-01-02T15:04:05.000Z07:00`
+const ConsistentMilli = `2006-01-02T15:04:05.000Z`
 
 type Rfc3339 struct{}
 
