@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
+	"github.com/jasoncolburne/better-auth-go/pkg/errors"
 )
 
 type Signable interface {
@@ -60,7 +61,7 @@ func (sm *SignableMessage[PayloadType]) Sign(signer cryptointerfaces.SigningKey)
 
 func (sm *SignableMessage[PayloadType]) Verify(verifier cryptointerfaces.Verifier, publicKey string) error {
 	if sm.Signature == nil {
-		return fmt.Errorf("nil signature")
+		return errors.NewInvalidMessageError("signature", "signature is null")
 	}
 
 	composedPayload, err := sm.ComposePayload()
