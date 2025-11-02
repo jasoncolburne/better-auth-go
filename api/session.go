@@ -2,9 +2,9 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/jasoncolburne/better-auth-go/pkg/errors"
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
@@ -172,7 +172,7 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(ctx context.Context, 
 
 	hash := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Access.PublicKey))
 	if !strings.EqualFold(hash, token.RotationHash) {
-		return "", fmt.Errorf("hash mismatch")
+		return "", errors.NewInvalidHashError(token.RotationHash, hash, "rotation")
 	}
 
 	if err := ba.store.Authentication.Key.EnsureActive(ctx, token.Identity, token.Device); err != nil {
@@ -186,7 +186,8 @@ func (ba *BetterAuthServer[AttributesType]) RefreshSession(ctx context.Context, 
 	}
 
 	if now.After(refreshExpiry) {
-		return "", fmt.Errorf("refresh has expired")
+		nowStr := ba.encoding.Timestamper.Format(now)
+		return "", errors.NewExpiredTokenError(token.RefreshExpiry, nowStr, "refresh")
 	}
 
 	if err := ba.store.Access.KeyHash.Reserve(ctx, hash); err != nil {

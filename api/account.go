@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/jasoncolburne/better-auth-go/pkg/errors"
 	"github.com/jasoncolburne/better-auth-go/pkg/messages"
 )
 
@@ -31,7 +31,7 @@ func (ba *BetterAuthServer[AttributesType]) CreateAccount(ctx context.Context, m
 	device := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.PublicKey + request.Payload.Request.Authentication.RotationHash))
 
 	if device != request.Payload.Request.Authentication.Device {
-		return "", fmt.Errorf("bad device derivation")
+		return "", errors.NewInvalidDeviceError(request.Payload.Request.Authentication.Device, device)
 	}
 
 	if err := ba.store.Recovery.Hash.Register(
@@ -88,7 +88,7 @@ func (ba *BetterAuthServer[AttributesType]) RecoverAccount(ctx context.Context, 
 
 	device := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.PublicKey + request.Payload.Request.Authentication.RotationHash))
 	if device != request.Payload.Request.Authentication.Device {
-		return "", fmt.Errorf("bad device derivation")
+		return "", errors.NewInvalidDeviceError(request.Payload.Request.Authentication.Device, device)
 	}
 
 	hash := ba.crypto.Hasher.Sum([]byte(request.Payload.Request.Authentication.RecoveryKey))

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jasoncolburne/better-auth-go/pkg/cryptointerfaces"
 	"github.com/jasoncolburne/better-auth-go/pkg/encodinginterfaces"
+	"github.com/jasoncolburne/better-auth-go/pkg/errors"
 	"github.com/jasoncolburne/better-auth-go/pkg/storageinterfaces"
 )
 
@@ -77,7 +78,7 @@ func ParseAccessToken[AttributesType any](
 
 func (at *AccessToken[AttributesType]) SerializeToken(tokenEncoder encodinginterfaces.TokenEncoder) (string, error) {
 	if at.signature == nil {
-		return "", fmt.Errorf("nil signature")
+		return "", errors.NewInvalidMessageError("signature", "signature is null")
 	}
 
 	composedPayload, err := at.ComposePayload()
@@ -109,7 +110,7 @@ func (at *AccessToken[AttributesType]) VerifySignature(
 	publicKey string,
 ) error {
 	if at.signature == nil {
-		return fmt.Errorf("nil signature")
+		return errors.NewInvalidMessageError("signature", "signature is null")
 	}
 
 	composedPayload, err := at.ComposePayload()
@@ -146,11 +147,14 @@ func (at *AccessToken[AttributesType]) VerifyTokenForAccess(
 	}
 
 	if now.Before(issuedAt) {
-		return fmt.Errorf("token from future")
+		nowStr := timestamper.Format(now)
+		timeDiff := issuedAt.Sub(now).Seconds()
+		return errors.NewFutureTokenError(at.IssuedAt, nowStr, timeDiff)
 	}
 
 	if now.After(expiry) {
-		return fmt.Errorf("token expired")
+		nowStr := timestamper.Format(now)
+		return errors.NewExpiredTokenError(at.Expiry, nowStr, "access")
 	}
 
 	return nil
@@ -299,11 +303,15 @@ func (ar *AccessRequest[PayloadType, AttributesType]) VerifyAccess(
 	expiry := accessTime.Add(nonceStore.Lifetime())
 
 	if now.After(expiry) {
-		return nil, fmt.Errorf("stale request")
+		nowStr := timestamper.Format(now)
+		maxAge := int64(nonceStore.Lifetime().Seconds())
+		return nil, errors.NewStaleRequestError(ar.Payload.Access.Timestamp, nowStr, maxAge)
 	}
 
 	if now.Before(accessTime) {
-		return nil, fmt.Errorf("request from future")
+		nowStr := timestamper.Format(now)
+		timeDiff := accessTime.Sub(now).Seconds()
+		return nil, errors.NewFutureRequestError(ar.Payload.Access.Timestamp, nowStr, timeDiff)
 	}
 
 	if err := nonceStore.Reserve(ctx, ar.Payload.Access.Nonce); err != nil {
