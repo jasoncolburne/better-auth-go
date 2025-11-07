@@ -1,0 +1,9 @@
+# Build artifacts
+target
+vendor
+
+# Logs
+*.log
+
+# OS
+.DS_Store
